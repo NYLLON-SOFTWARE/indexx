@@ -1,0 +1,19 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "indexx-instagram-skill",
+  "version": "0.1.0",
+  "description": "Export Instagram Saved post IDs through your browser sidebar or agent, with resumable checkpoints and JSON, CSV, and text output.",
+  "keywords": [
+    "agent-skills",
+    "instagram",
+    "saved-posts",
+    "export",
+    "browser"
+  ],
+  "author": {
+    "name": "NYLLON-SOFTWARE",
+    "url": "https://github.com/NYLLON-SOFTWARE"
+  },
+  "repository": "https://github.com/NYLLON-SOFTWARE/indexx-instagram-skill",
+  "homepage": "https://github.com/NYLLON-SOFTWARE/indexx-instagram-skill"
+}

@@ -1,0 +1,19 @@
+# Private capture data belongs outside this source repository.
+*.jsonl
+!examples/checkpoints.jsonl
+saved-items.json
+saved-items.csv
+saved-ids.txt
+exports/
+checkpoints/
+
+# Local credentials, environments, and generated artifacts.
+.env
+.env.*
+*.pem
+*.key
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+dist/
