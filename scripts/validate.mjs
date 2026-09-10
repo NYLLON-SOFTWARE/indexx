@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
+import { lexer, walkTokens } from 'marked';
 import { parse } from 'yaml';
 import { ROOT } from './build-release.mjs';
 
@@ -32,13 +33,15 @@ export function validateSkill(directory) {
   }
   assert(match[2].trim(), 'Skill instructions must not be empty');
   const root = realpathSync(directory);
-  for (const [, target] of match[2].matchAll(/\]\(([^)]+)\)/g)) {
-    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('#')) continue;
+  walkTokens(lexer(match[2]), token => {
+    if (token.type !== 'link' && token.type !== 'image') return;
+    const target = token.href;
+    if (!target || /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('#')) return;
     const resource = realpathSync(resolve(root, target.split('#')[0]));
     const inside = relative(root, resource);
     assert(inside && !isAbsolute(inside) && inside !== '..' && !inside.startsWith(`..${sep}`), `External skill resource: ${target}`);
     assert(statSync(resource).isFile(), `Missing skill resource: ${target}`);
-  }
+  });
   return fields;
 }
 

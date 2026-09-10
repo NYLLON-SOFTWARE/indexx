@@ -86,3 +86,37 @@ test('skill resource links stay inside the real skill directory', async t => {
     assert.throws(() => validateSkill(directory), /External skill resource/, target);
   }
 });
+
+test('skill validation checks Markdown links and ignores code examples', async t => {
+  const { validateSkill } = await import('../scripts/validate.mjs');
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'instagram-skill-markdown-'));
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
+  const directory = path.join(temp, 'example-skill');
+  fs.mkdirSync(directory);
+  fs.writeFileSync(path.join(directory, 'helper(v1).js'), '// Packaged helper');
+  const writeBody = body => fs.writeFileSync(path.join(directory, 'SKILL.md'),
+    `---\nname: example-skill\ndescription: Export records\n---\n${body}\n`);
+  for (const body of [
+    '`[example](missing.js)`',
+    '`` `[example](missing.js)` ``',
+    '```js\nconst example = "[example](missing.js)";\n```',
+    '~~~markdown\n[example](missing.js)\n~~~',
+    '    [example](missing.js)',
+    '> ```md\n> [example](missing.js)\n> ```',
+    '\\[example](missing.js)',
+    '[helper](helper(v1).js "Helper title")',
+    '[helper][resource]\n\n[resource]: helper(v1).js',
+  ]) {
+    writeBody(body);
+    assert.equal(validateSkill(directory).name, 'example-skill', body);
+  }
+  for (const body of [
+    '`[example](ignored.js)` and [real](missing.js)',
+    '> - **[real](missing.js)**',
+    '[real][resource]\n\n[resource]: missing.js',
+    '![image](missing.png)',
+  ]) {
+    writeBody(body);
+    assert.throws(() => validateSkill(directory), /ENOENT/, body);
+  }
+});
