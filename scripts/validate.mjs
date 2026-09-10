@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { basename, join, resolve } from 'node:path';
+import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { parse } from 'yaml';
@@ -31,9 +31,13 @@ export function validateSkill(directory) {
     assert(Object.values(fields.metadata).every(value => typeof value === 'string'), 'Metadata values must be strings');
   }
   assert(match[2].trim(), 'Skill instructions must not be empty');
+  const root = realpathSync(directory);
   for (const [, target] of match[2].matchAll(/\]\(([^)]+)\)/g)) {
     if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('#')) continue;
-    assert(statSync(resolve(directory, target.split('#')[0])).isFile(), `Missing skill resource: ${target}`);
+    const resource = realpathSync(resolve(root, target.split('#')[0]));
+    const inside = relative(root, resource);
+    assert(inside && !isAbsolute(inside) && inside !== '..' && !inside.startsWith(`..${sep}`), `External skill resource: ${target}`);
+    assert(statSync(resource).isFile(), `Missing skill resource: ${target}`);
   }
   return fields;
 }

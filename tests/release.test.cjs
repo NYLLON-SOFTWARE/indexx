@@ -59,3 +59,30 @@ test('skill validation accepts standard metadata and catches broken packages', a
   write('name: wrong-folder\ndescription: Export records');
   assert.throws(() => validateSkill(directory));
 });
+
+test('skill resource links stay inside the real skill directory', async t => {
+  const { validateSkill } = await import('../scripts/validate.mjs');
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'instagram-skill-resources-'));
+  t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
+  const directory = path.join(temp, 'example-skill');
+  const scripts = path.join(directory, 'scripts');
+  const sibling = path.join(temp, 'example-skill-extra');
+  fs.mkdirSync(scripts, { recursive: true });
+  fs.mkdirSync(sibling);
+  fs.writeFileSync(path.join(scripts, 'helper.js'), '// Packaged helper');
+  fs.writeFileSync(path.join(sibling, 'helper.js'), '// External helper');
+  fs.writeFileSync(path.join(temp, 'README.md'), 'Repository documentation');
+  // Directory junctions exercise symlink resolution without requiring Windows symlink privileges.
+  fs.symlinkSync(scripts, path.join(directory, 'internal'), 'junction');
+  fs.symlinkSync(sibling, path.join(directory, 'external'), 'junction');
+  const writeLink = target => fs.writeFileSync(path.join(directory, 'SKILL.md'),
+    `---\nname: example-skill\ndescription: Export records\n---\nRead [the helper](${target}).\n`);
+  for (const target of ['scripts/helper.js#usage', 'internal/helper.js']) {
+    writeLink(target);
+    assert.equal(validateSkill(directory).name, 'example-skill');
+  }
+  for (const target of ['../README.md', '../example-skill-extra/helper.js', 'external/helper.js']) {
+    writeLink(target);
+    assert.throws(() => validateSkill(directory), /External skill resource/, target);
+  }
+});
