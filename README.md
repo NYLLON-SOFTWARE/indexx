@@ -98,19 +98,18 @@ The JavaScript helper accepts captured batch objects and returns normalized reco
 
 ## Developer checks
 
-The following commands are for maintainers, not browser-skill users. Node runs tests; Python runs packaging tests, standards validation, and the optional legacy converter. Neither runtime is included in the installed skill.
+The following commands are for maintainers, not browser-skill users. All development tooling uses Node.js 22+ and npm. The installed browser skill has no package dependencies.
 
 ```sh
-node --test tests/export_ids.test.cjs
-python3 -m unittest discover -s tests -v
-python3 scripts/build_release.py
+npm ci --ignore-scripts
+npm test
+npm run validate
+npm run build
 ```
 
-The builder creates `dist/instagram-saved-ids-0.1.0.zip` for individual-skill import and `dist/indexx-instagram-skill-0.1.0.zip` for plugin distribution. Import support depends on the host. Explicit file allowlists exclude Python utilities, private checkpoints, exports, tests, and Git history from both packages.
+The builder creates `dist/instagram-saved-ids-0.1.0.zip` for individual-skill import and `dist/indexx-instagram-skill-0.1.0.zip` for plugin distribution. Import support depends on the host. Explicit file allowlists exclude development utilities, npm packages, private checkpoints, exports, tests, and Git history from both packages.
 
-The optional `scripts/export_ids.py` converts existing JSONL captures from a developer terminal. It is outside the installed skill and never part of the sidebar workflow.
-
-GitHub Actions checks the official skill format and plugin schema, JavaScript behavior in an isolated runtime without Node/DOM/network APIs, and package behavior on Linux, macOS, and Windows. An isolated skills CLI installation has also verified the distribution layout for Codex, Cursor, Claude Code, and OpenClaw. Live browser testing remains separate from those checks.
+GitHub Actions checks the skill's frontmatter and relative resources against the Agent Skills specification, validates the plugin against its published JSON Schema, and tests JavaScript and package behavior on Linux, macOS, and Windows. The export helper is tested in an isolated runtime without Node/DOM/network APIs. An isolated skills CLI installation has also verified the distribution layout for Codex, Cursor, Claude Code, and OpenClaw. Live browser testing remains separate from those checks.
 
 ## Privacy
 

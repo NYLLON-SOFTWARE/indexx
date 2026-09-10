@@ -91,7 +91,7 @@ OpenClaw's native Git/local installer expects `SKILL.md` at the source root. For
 
 The intended user experience is selecting the skill from an agent browser-extension sidebar and running it against the authenticated Instagram tab. OpenAI documents side chat beside the current page and browser control through its extension. Skill selection remains an agent feature; this package does not create an independent Chrome extension. [Browser extension documentation](https://learn.chatgpt.com/docs/chrome-extension).
 
-No Python or Node.js installation is required for that workflow. The bundled normalizer is pure JavaScript and returns export contents to the host's artifact/download tools. The repository retains a Python converter only as an optional developer utility outside the installed skill. Durable cross-session resume still depends on the host's checkpoint storage; temporary in-memory state alone cannot promise it.
+No Python or Node.js installation is required for that workflow. The bundled normalizer is pure JavaScript and returns export contents to the host's artifact/download tools. Developer-only validation, tests, and ZIP packaging also use JavaScript. Durable cross-session resume still depends on the host's checkpoint storage; temporary in-memory state alone cannot promise it.
 
 This workflow must be able to open the user's authorized Saved grid, read item URLs, scroll the actual grid, preserve batches outside the page, and normalize batches using JavaScript in the agent/extension runtime. A model's ability to read the skill does not demonstrate those capabilities.
 
@@ -103,8 +103,8 @@ Keep collection instructions expressed as capabilities. Place concrete browser e
 
 ## What remains to validate per host
 
-Validation covers the JavaScript helper in an isolated runtime with no Node, DOM, or network APIs, export behavior after extracting both release ZIPs, the optional developer-only Python utility, and a temporary-project `skills` CLI installation targeting Codex, Cursor, Claude Code, and OpenClaw. The CLI produced the expected shared `.agents/skills/`, Claude `.claude/skills/`, and OpenClaw `skills/` copies. These checks do not establish browser behavior inside the actual products.
+Validation covers the JavaScript helper in an isolated runtime with no Node, DOM, or network APIs, export behavior from both release ZIPs, and a temporary-project `skills` CLI installation targeting Codex, Cursor, Claude Code, and OpenClaw. The CLI produced the expected shared `.agents/skills/`, Claude `.claude/skills/`, and OpenClaw `skills/` copies. These checks do not establish browser behavior inside the actual products.
 
-The skill passed the official `skills-ref` validator, and the root plugin passed the published Agent Plugins 1.0.0 JSON Schema. The older bundled Codex quick validator rejected the standard `compatibility` field because its allowlist omits it; the current Agent Skills specification and reference validator accept that field. Keep the standard field rather than removing useful runtime metadata to satisfy the older checker.
+Continuous validation uses a JavaScript check of the Agent Skills frontmatter constraints and relative resources, plus the published Agent Plugins 1.0.0 JSON Schema. The skill also passed the official `skills-ref` validator during initial research. The standard `compatibility` field is retained to document the host capabilities this workflow requires.
 
 For each supported runtime, separately record: skill discovery, access to relative resources, execution of the normalizer on synthetic checkpoints, and a user-authorized browser run covering collection, interruption/resume, and completion evidence. Until those browser runs exist, describe that host as format-compatible with prerequisites, not end-to-end tested.

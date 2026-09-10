@@ -1,0 +1,19 @@
+{
+  "name": "indexx-instagram-skill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Developer tooling for the Instagram Saved IDs browser skill",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "validate": "node scripts/validate.mjs",
+    "build": "node scripts/build-release.mjs"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0",
+    "fflate": "0.8.3",
+    "yaml": "2.9.0"
+  }
+}

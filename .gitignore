@@ -12,8 +12,6 @@ checkpoints/
 .env.*
 *.pem
 *.key
-.venv/
-__pycache__/
-*.py[cod]
+node_modules/
 .DS_Store
 dist/
