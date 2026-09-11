@@ -51,11 +51,24 @@ export async function validate(root = ROOT) {
   }
   const manifest = JSON.parse(readFileSync(join(root, 'plugin.json'), 'utf8'));
   assert.equal(manifest.$schema, PLUGIN_SCHEMA, 'Use the Agent Plugins 1.0.0 schema');
+  // This single-plugin marketplace serves the existing repository root.
+  // https://developers.openai.com/plugins/build/plugins#marketplace-metadata
+  const marketplace = JSON.parse(readFileSync(join(root, '.agents/plugins/marketplace.json'), 'utf8'));
+  assert.equal(marketplace.name, manifest.name, 'Marketplace name must match the documented install identifier');
+  assert(typeof marketplace.interface?.displayName === 'string' && marketplace.interface.displayName.trim(), 'Marketplace needs a display name');
+  assert(Array.isArray(marketplace.plugins) && marketplace.plugins.length === 1, 'Marketplace must expose the Instagram plugin');
+  const [entry] = marketplace.plugins;
+  const compatibility = JSON.parse(readFileSync(join(root, '.codex-plugin/plugin.json'), 'utf8'));
+  assert.equal(entry.name, manifest.name, 'Marketplace must reference the portable plugin name');
+  assert.equal(entry.name, compatibility.name, 'Marketplace must reference the Codex plugin name');
+  assert.deepEqual(entry.source, { source: 'local', path: './' }, 'Marketplace must load the plugin from this repository root');
+  assert.deepEqual(entry.policy, { installation: 'AVAILABLE', authentication: 'ON_INSTALL' }, 'Marketplace must offer an explicit installation');
+  assert.equal(entry.category, compatibility.interface.category, 'Marketplace category must match the plugin');
   const response = await fetch(PLUGIN_SCHEMA, { signal: AbortSignal.timeout(30000) });
   if (!response.ok) throw new Error(`Schema request failed: HTTP ${response.status}`);
   const check = new Ajv2020({ allErrors: true }).compile(await response.json());
   assert(check(manifest), JSON.stringify(check.errors));
-  console.log('Agent Skills frontmatter/resources and Agent Plugins schema are valid');
+  console.log('Agent Skills frontmatter/resources, Codex marketplace, and Agent Plugins schema are valid');
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) await validate();

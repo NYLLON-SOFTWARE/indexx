@@ -1,0 +1,20 @@
+{
+  "name": "indexx-instagram-skill",
+  "interface": {
+    "displayName": "INDEXX Instagram"
+  },
+  "plugins": [
+    {
+      "name": "indexx-instagram-skill",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
