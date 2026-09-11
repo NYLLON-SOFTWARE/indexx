@@ -8,7 +8,7 @@
   },
   "skills": "./skills/",
   "interface": {
-    "displayName": "Instagram Saved IDs",
+    "displayName": "indexx",
     "shortDescription": "Export IDs from your Instagram Saved grid.",
     "longDescription": "Collect accessible Instagram Saved IDs through the host's browser extension, built-in browser, browser integration, or Computer Use. Capture exact post URLs and deliver JSON, CSV, and text through the host's processing and file tools. No Python or terminal setup is needed.",
     "developerName": "NYLLON-SOFTWARE",
