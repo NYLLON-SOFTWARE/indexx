@@ -1,7 +1,7 @@
 {
   "name": "indexx-instagram-skill",
   "version": "0.1.0",
-  "description": "Export Instagram Saved post IDs through your browser sidebar or agent, with resumable checkpoints and JSON, CSV, and text output.",
+  "description": "Export Instagram Saved post IDs using browser tools or Computer Use, with resumable checkpoints and JSON, CSV, and text output.",
   "author": {
     "name": "NYLLON-SOFTWARE",
     "url": "https://github.com/NYLLON-SOFTWARE"
@@ -10,7 +10,7 @@
   "interface": {
     "displayName": "Instagram Saved IDs",
     "shortDescription": "Export IDs from your Instagram Saved grid.",
-    "longDescription": "Use the browser extension or agent sidebar to collect accessible Instagram Saved IDs and deliver JSON, CSV, and text exports. Uses the host's browser, JavaScript, checkpoint, and download tools; no Python or terminal setup is needed.",
+    "longDescription": "Collect accessible Instagram Saved IDs through the host's browser extension, built-in browser, browser integration, or Computer Use. Capture exact post URLs and deliver JSON, CSV, and text through the host's processing and file tools. No Python or terminal setup is needed.",
     "developerName": "NYLLON-SOFTWARE",
     "category": "Productivity",
     "capabilities": [

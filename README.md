@@ -1,8 +1,8 @@
 # Instagram Saved IDs
 
-Export the IDs of your Instagram **Saved → All posts** grid from your agent's browser-extension sidebar. Select the skill, point it at your signed-in Instagram tab, and ask it to collect your saved items.
+Export the IDs of your Instagram **Saved → All posts** grid using your agent's browser-extension sidebar, built-in browser, configured browser integration, or Computer Use. Select the skill, choose your authorized Instagram session, and ask it to collect your saved items.
 
-**No Python, Node.js installation, terminal commands, or API keys are needed to use the skill.** It uses the browser extension's existing tools and a small JavaScript helper for deduplication and export formatting.
+**No Python, Node.js installation, terminal commands, or API keys are needed to use the skill.** It uses the host's available browser/computer tools and a small JavaScript helper for deduplication and export formatting. A browser extension is optional.
 
 ## Use it from the sidebar
 
@@ -12,9 +12,20 @@ Export the IDs of your Instagram **Saved → All posts** grid from your agent's 
 
 > Export all accessible saved-post IDs from my Instagram All posts grid. Include photos, carousels, videos, and reels. Give me JSON, CSV, and a plain text list, and tell me whether you reached the end.
 
-The agent reads saved-grid links, scrolls for more items, deduplicates IDs, and returns the exports through the extension's download/artifact tools. It uses the account and tab you authorize; a username alone cannot grant access to another account's private Saved list.
+The agent reads saved-grid links, scrolls for more items, deduplicates IDs, and returns the exports through the host's attachment, download, or file tools. It uses the account and tab you authorize; a username alone cannot grant access to another account's private Saved list.
 
 To resume, provide the previous checkpoint. The agent re-traverses the grid and merges overlapping batches. Recovery across sessions requires the host to save a checkpoint; temporary session state alone cannot guarantee it.
+
+## Use it without a browser extension
+
+In a host with a built-in browser or enabled Computer Use, select the skill and ask:
+
+> Use the browser or Computer Use to open my Instagram Saved All posts page and export the IDs. Use my existing signed-in browser if available; hand the page to me if I need to sign in.
+
+- **Built-in or managed browser:** The agent opens Instagram in that browser. Its profile may need a separate sign-in. It uses available link/DOM inspection or visual controls. [ChatGPT browser documentation](https://learn.chatgpt.com/docs/browser).
+- **Computer Use:** The agent operates the permitted browser app. If DOM/link inspection is unavailable, it opens each saved tile and reads the complete post URL through supported address-field or Copy link tools. This is slower and requires reliable text access; thumbnails cannot supply exact IDs. Computer Use must already be installed/enabled and permitted in the host. [ChatGPT Computer Use](https://learn.chatgpt.com/docs/computer-use).
+
+Browser access, JavaScript processing, and file delivery are separate capabilities. The agent checks each before a long run. It returns the same JSON, CSV, and text outputs through whichever host file tools are available. If exact URLs or file delivery are unavailable, it explains the limitation and preserves usable progress. These fallback instructions have not yet been verified in a complete live Instagram run.
 
 ## What you get
 
@@ -24,7 +35,7 @@ To resume, provide the previous checkpoint. The agent re-traverses the grid and 
 | `saved-items.csv` | IDs, identifier kinds, observed media types, and URLs. |
 | `saved-items.json` | Items, observed URL variants, capture interval, unresolved links, and coverage status. |
 
-The skill collects rendered links. It does not download media or convert shortcodes into numeric media IDs. A carousel's ID identifies its parent post, not each slide.
+The skill collects exact links from Saved-grid items, including permalinks obtained by opening those items. It does not download media or convert shortcodes into numeric media IDs. A carousel's ID identifies its parent post, not each slide.
 
 Coverage is explicit:
 
@@ -32,19 +43,19 @@ Coverage is explicit:
 - **`end-observed`** — the accessible grid appeared exhausted after repeated settled checks. This is not a server-verified account total.
 - **`empty`** — the page explicitly showed an empty Saved state.
 
-Captures describe what was observed during a time interval. Unknown links are retained for review. If the extension cannot create downloadable files, the agent can return copyable contents when they fit; it must report any delivery limitation instead of silently truncating an export.
+Captures describe what was observed during a time interval. Unknown links and tiles without readable URLs are retained for review. If the host cannot create downloadable files, the agent can return copyable contents when they fit; it must report any delivery limitation instead of silently truncating an export.
 
 ## Compatibility
 
-The shared workflow follows [Agent Skills](https://agentskills.io/specification); its outer package follows [Agent Plugins 1.0.0](https://agent-plugins.org/). These conventions let compatible hosts load the same skill. The sidebar's agent executes the workflow using its tools; `SKILL.md` is not a standalone extension executable.
+The shared workflow follows [Agent Skills](https://agentskills.io/specification); its outer package follows [Agent Plugins 1.0.0](https://agent-plugins.org/). These conventions let compatible hosts load the same skill. The host's agent executes the workflow using its available tools.
 
-The host needs authenticated tab control, rendered link inspection, JavaScript data processing, and checkpoint/export tools. OpenAI documents side chat beside the current page and browser control through its [browser extension](https://learn.chatgpt.com/docs/chrome-extension).
+The host needs authenticated browser control, exact URL capture, JavaScript data processing, and checkpoint/export tools. The skill selects among available extension, browser, and Computer Use routes. OpenAI also documents side chat beside the current page through its [browser extension](https://learn.chatgpt.com/docs/chrome-extension).
 
 The same skill can be installed in Codex, Cursor, OpenClaw, Claude Code, and other Agent Skills hosts with equivalent browser capabilities. Their setup and skill-selection UI differ. Format support does not establish a completed live Instagram test in every product; see the [source-linked research](docs/skill-portability-research.md).
 
 ## Installation routes
 
-Use the host's skill installer/import flow with the **whole** `skills/instagram-saved-ids/` folder. This repository distributes a skill for existing agent extensions; it does not bundle a new browser extension.
+Use the host's skill installer/import flow with the **whole** `skills/instagram-saved-ids/` folder. This repository distributes a skill for existing agent browser/computer tools; it does not bundle a new browser extension.
 
 ### ChatGPT and Codex
 

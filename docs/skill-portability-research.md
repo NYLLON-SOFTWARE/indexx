@@ -1,6 +1,6 @@
 # Skill portability research
 
-Researched: **2026-09-09**. Sources are first-party documentation checked on that date. Product support and installation paths can change. These findings establish documented compatibility, not a completed Instagram export test in every client. Installation and the browser-sidebar user workflow are covered in the [README](../README.md).
+Researched: **2026-09-09**, with browser and Computer Use fallback guidance updated **2026-09-10**. Sources are first-party documentation checked on those dates. Product support and installation paths can change. These findings establish documented compatibility, not a completed Instagram export test in every client. Installation and available browser workflows are covered in the [README](../README.md).
 
 ## Recommendation
 
@@ -90,6 +90,8 @@ OpenClaw's native Git/local installer expects `SKILL.md` at the source root. For
 ## Browser capability is the main practical limit
 
 The intended user experience is selecting the skill from an agent browser-extension sidebar and running it against the authenticated Instagram tab. OpenAI documents side chat beside the current page and browser control through its extension. Skill selection remains an agent feature; this package does not create an independent Chrome extension. [Browser extension documentation](https://learn.chatgpt.com/docs/chrome-extension).
+
+The extension is optional. Updated routing also supports a built-in/managed browser or enabled Computer Use. OpenAI documents the built-in browser's separate profile and Computer Use in Work/Codex. Native Computer Use can operate browser UI but does not promise DOM or exact URL access; the skill therefore checks for readable link values or post permalinks before proceeding. These routes are specified but not yet verified end to end. [Browser](https://learn.chatgpt.com/docs/browser), [Computer Use](https://learn.chatgpt.com/docs/computer-use).
 
 No Python or Node.js installation is required for that workflow. The bundled normalizer is pure JavaScript and returns export contents to the host's artifact/download tools. Developer-only validation, tests, and ZIP packaging also use JavaScript. Durable cross-session resume still depends on the host's checkpoint storage; temporary in-memory state alone cannot promise it.
 

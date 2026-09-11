@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "indexx-instagram-skill",
   "version": "0.1.0",
-  "description": "Export Instagram Saved post IDs through your browser sidebar or agent, with resumable checkpoints and JSON, CSV, and text output.",
+  "description": "Export Instagram Saved post IDs using browser tools or Computer Use, with resumable checkpoints and JSON, CSV, and text output.",
   "keywords": [
     "agent-skills",
     "instagram",
