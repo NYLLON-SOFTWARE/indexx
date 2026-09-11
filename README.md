@@ -1,10 +1,10 @@
-# Instagram Saved IDs
+# indexx
 
 Export the IDs of your Instagram **Saved → All posts** grid using your agent's browser-extension sidebar, built-in browser, configured browser integration, or Computer Use. Select the skill, choose your authorized Instagram session, and ask it to collect your saved items.
 
 **No Python, Node.js installation, terminal commands, or API keys are needed to use the skill.** It uses the host's available browser/computer tools and a small JavaScript helper for deduplication and export formatting. A browser extension is optional.
 
-**Codex app:** [Add the INDEXX Instagram marketplace](#install-in-the-codex-app), then install **Instagram Saved IDs**.
+**Codex app:** [Add the indexx marketplace](#install-in-the-codex-app), then install **Instagram Saved IDs**.
 
 ## Use it from the sidebar
 
@@ -69,30 +69,30 @@ This repository is a custom Codex marketplace. No server deployment or public di
 
    | Field | Value |
    | --- | --- |
-   | Source | `NYLLON-SOFTWARE/indexx-instagram-skill` |
+   | Source | `NYLLON-SOFTWARE/indexx` |
    | Git ref | `main` |
    | Sparse paths | Leave blank |
 
 4. Click **Add marketplace**.
-5. Select **INDEXX Instagram** or search for **Instagram Saved IDs**, then install **indexx-instagram-skill**.
+5. Select **indexx** or search for **Instagram Saved IDs**, then install **indexx**.
 6. Start a new conversation and select **instagram-saved-ids**. If it does not appear, restart the app.
 
 Adding the marketplace makes the plugin available; installing the plugin activates its bundled skill. Browser or Computer Use access still comes from your configured host tools.
 
-**Private repository:** This repository is currently private. You need GitHub read access and working Git authentication on the computer running Codex. If the source cannot be fetched, verify repository access and GitHub organization authorization. A custom marketplace does not grant access to a private repository.
+**Public repository:** Anyone can add this marketplace from GitHub. You still need to sign in to your own Instagram account in the browser used for collection.
 
 ### Codex CLI (optional)
 
 If you use the CLI, register the same marketplace and install its plugin:
 
 ```sh
-codex plugin marketplace add NYLLON-SOFTWARE/indexx-instagram-skill --ref main
-codex plugin add indexx-instagram-skill@indexx-instagram-skill
+codex plugin marketplace add NYLLON-SOFTWARE/indexx --ref main
+codex plugin add indexx@indexx
 ```
 
 The identifier before `@` is the plugin name; the identifier after it is the marketplace name. Start a new session after installation. These commands are an alternative to the app steps above.
 
-To refresh this marketplace after a new release, run `codex plugin marketplace upgrade indexx-instagram-skill`, then reinstall/update the plugin from **Plugins** and start a new conversation.
+To refresh this marketplace after a new release, run `codex plugin marketplace upgrade indexx`, then reinstall/update the plugin from **Plugins** and start a new conversation.
 
 ### ChatGPT and standalone skills
 
@@ -119,7 +119,7 @@ For a manual install, copy `skills/instagram-saved-ids/` into a supported discov
 For developers who already use npm, the optional [skills CLI](https://github.com/vercel-labs/skills) automates that installation:
 
 ```sh
-npx skills add NYLLON-SOFTWARE/indexx-instagram-skill \
+npx skills add NYLLON-SOFTWARE/indexx \
   --skill instagram-saved-ids \
   -a codex -a cursor -a claude-code -a openclaw --copy
 ```
@@ -156,7 +156,7 @@ npm run validate
 npm run build
 ```
 
-The builder creates `dist/instagram-saved-ids-0.1.0.zip` for individual-skill import and `dist/indexx-instagram-skill-0.1.0.zip` for plugin distribution. Import support depends on the host. Explicit file allowlists exclude development utilities, npm packages, private checkpoints, exports, tests, and Git history from both packages.
+The builder creates `dist/instagram-saved-ids-0.1.0.zip` for individual-skill import and `dist/indexx-0.1.0.zip` for plugin distribution. Import support depends on the host. Explicit file allowlists exclude development utilities, npm packages, private checkpoints, exports, tests, and Git history from both packages.
 
 GitHub Actions checks the skill's frontmatter and relative resources against the Agent Skills specification, validates the plugin against its published JSON Schema, checks the marketplace's source and plugin identity, and tests JavaScript and package behavior on Linux, macOS, and Windows. The export helper is tested in an isolated runtime without Node/DOM/network APIs. An isolated skills CLI installation has also verified the distribution layout for Codex, Cursor, Claude Code, and OpenClaw. Live browser testing remains separate from those checks.
 

@@ -1,11 +1,11 @@
 {
-  "name": "indexx-instagram-skill",
+  "name": "indexx",
   "interface": {
-    "displayName": "INDEXX Instagram"
+    "displayName": "indexx"
   },
   "plugins": [
     {
-      "name": "indexx-instagram-skill",
+      "name": "indexx",
       "source": {
         "source": "local",
         "path": "./"
