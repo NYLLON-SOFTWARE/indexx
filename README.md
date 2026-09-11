@@ -4,7 +4,7 @@ Export the IDs of your Instagram **Saved → All posts** grid using your agent's
 
 **No Python, Node.js installation, terminal commands, or API keys are needed to use the skill.** It uses the host's available browser/computer tools and a small JavaScript helper for deduplication and export formatting. A browser extension is optional.
 
-**Codex app:** [Add the indexx marketplace](#install-in-the-codex-app), then install **indexx**.
+**Codex app:** [Add the indexx marketplace](#install-in-the-codex-app), then install **Indexx Bookmark Fetch**.
 
 ## Use it from the sidebar
 
@@ -74,7 +74,7 @@ This repository is a custom Codex marketplace. No server deployment or public di
    | Sparse paths | Leave blank |
 
 4. Click **Add marketplace**.
-5. Select the **indexx** marketplace or search for **indexx**, then install the **indexx** plugin.
+5. Select the **indexx** marketplace or search for **Indexx Bookmark Fetch**, then install **Indexx Bookmark Fetch** (plugin ID: `indexx`).
 6. Start a new conversation and select **instagram-saved-ids**. If it does not appear, restart the app.
 
 Adding the marketplace makes the plugin available; installing the plugin activates its bundled skill. Browser or Computer Use access still comes from your configured host tools.
