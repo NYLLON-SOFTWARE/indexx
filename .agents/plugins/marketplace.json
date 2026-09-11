@@ -1,0 +1,20 @@
+{
+  "name": "indexx",
+  "interface": {
+    "displayName": "indexx"
+  },
+  "plugins": [
+    {
+      "name": "indexx",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -40,7 +40,7 @@ The minimal wrapper is:
 ```json
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "indexx-instagram-skill"
+  "name": "indexx"
 }
 ```
 
@@ -75,10 +75,10 @@ Vercel's open `skills` CLI supports repository sources, named skills, multiple t
 
 ```sh
 # Inspect what the repository contains.
-npx skills add NYLLON-SOFTWARE/indexx-instagram-skill --list
+npx skills add NYLLON-SOFTWARE/indexx --list
 
 # Install the selected skill for the current project.
-npx skills add NYLLON-SOFTWARE/indexx-instagram-skill \
+npx skills add NYLLON-SOFTWARE/indexx \
   --skill instagram-saved-ids \
   -a codex -a cursor -a claude-code -a openclaw --copy
 ```

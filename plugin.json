@@ -1,6 +1,6 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "indexx-instagram-skill",
+  "name": "indexx",
   "version": "0.1.0",
   "description": "Export Instagram Saved post IDs using browser tools or Computer Use, with resumable checkpoints and JSON, CSV, and text output.",
   "keywords": [
@@ -14,6 +14,6 @@
     "name": "NYLLON-SOFTWARE",
     "url": "https://github.com/NYLLON-SOFTWARE"
   },
-  "repository": "https://github.com/NYLLON-SOFTWARE/indexx-instagram-skill",
-  "homepage": "https://github.com/NYLLON-SOFTWARE/indexx-instagram-skill"
+  "repository": "https://github.com/NYLLON-SOFTWARE/indexx",
+  "homepage": "https://github.com/NYLLON-SOFTWARE/indexx"
 }

@@ -1,5 +1,5 @@
 {
-  "name": "indexx-instagram-skill",
+  "name": "indexx",
   "version": "0.1.0",
   "description": "Export Instagram Saved post IDs using browser tools or Computer Use, with resumable checkpoints and JSON, CSV, and text output.",
   "author": {
@@ -20,8 +20,8 @@
     "defaultPrompt": [
       "Export the IDs from my Instagram Saved All posts grid."
     ],
-    "websiteURL": "https://github.com/NYLLON-SOFTWARE/indexx-instagram-skill"
+    "websiteURL": "https://github.com/NYLLON-SOFTWARE/indexx"
   },
-  "repository": "https://github.com/NYLLON-SOFTWARE/indexx-instagram-skill",
-  "homepage": "https://github.com/NYLLON-SOFTWARE/indexx-instagram-skill"
+  "repository": "https://github.com/NYLLON-SOFTWARE/indexx",
+  "homepage": "https://github.com/NYLLON-SOFTWARE/indexx"
 }
