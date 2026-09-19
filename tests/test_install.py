@@ -211,6 +211,21 @@ class InstallerTests(unittest.TestCase):
         self.assertEqual((self.root / "logs/install.json").read_bytes(), before_manifest)
         self.assertFalse((self.root / "logs/install-backups").exists())
 
+    def test_catalog_removal_during_planning_cannot_recreate_empty_catalog(self):
+        self.run_install()
+        catalog = self.root / "markdown/instagram/saves-index.md"
+        manifest = (self.root / "logs/install.json").read_bytes()
+        original_parse = installer._status.parse_catalog
+        def remove_after_parse(text):
+            rows = original_parse(text)
+            catalog.unlink()
+            return rows
+        with mock.patch.object(installer._status, "parse_catalog", side_effect=remove_after_parse):
+            with self.assertRaisesRegex(ValueError, "changed during installation"):
+                self.run_install()
+        self.assertFalse(catalog.exists())
+        self.assertEqual((self.root / "logs/install.json").read_bytes(), manifest)
+
     def test_edit_during_backups_stops_before_replacing_support(self):
         self.run_install()
         target = self.root / "AGENTS.md"

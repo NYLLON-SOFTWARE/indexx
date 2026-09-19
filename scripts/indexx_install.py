@@ -249,7 +249,7 @@ def _plan(source: Path, root: Path, revision: str, refresh: bool, replace_suppor
     for relative, content in templates.items():
         target = destination(root, relative)
         if not target.exists():
-            observed[relative] = None
+            observed.setdefault(relative, None)
             writes[relative] = content
             report["planned"]["create"].append(relative)
     if report["migration_required"]:
