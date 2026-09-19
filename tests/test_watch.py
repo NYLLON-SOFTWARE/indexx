@@ -3,6 +3,7 @@ from html.parser import HTMLParser
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import types
@@ -316,6 +317,22 @@ class WatchlistTests(unittest.TestCase):
         document = (self.root / "wiki/views/jane-clips.html").read_text()
         self.assertIn("jane-doe · speaker · Uploader: @example · video", document)
         self.assertIn("Search: &quot;useful&quot;", document)
+
+    def test_cli_reports_corrupt_search_database_without_traceback(self):
+        cache = self.root / "db/search.sqlite3"
+        cache.parent.mkdir()
+        original = b"not a SQLite database"
+        cache.write_bytes(original)
+        result = subprocess.run(
+            [sys.executable, str(REPO / "scripts/indexx_watch.py"), "--root", str(self.root)],
+            cwd=self.base, capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.stdout, "")
+        self.assertIn("Watchlist stopped:", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertEqual(cache.read_bytes(), original)
+        self.assertFalse((self.root / "wiki/views").exists())
 
     def test_real_search_index_renders_person_filter_and_survives_generated_views(self):
         with mock.patch.object(sys, "path", [str(REPO / "scripts"), *sys.path]):

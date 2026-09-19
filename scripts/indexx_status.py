@@ -170,13 +170,13 @@ def person_page(root: Path, slug: str) -> dict[str, Any]:
     front, body = frontmatter(read_text(path))
     if front.get("id") != slug:
         raise Invalid(f"person page id must match filename: {slug}")
-    name, aliases = front.get("name"), front.get("aliases", [])
+    name, aliases = front.get("name"), front.get("aliases")
     if not isinstance(name, str) or not name.strip():
         raise Invalid(f"person page needs a name: {slug}")
     if (not isinstance(aliases, list)
             or not all(isinstance(a, str) and a.strip() for a in aliases)
             or len({a.strip().casefold() for a in aliases}) != len(aliases)):
-        raise Invalid(f"person aliases must be distinct nonempty strings: {slug}")
+        raise Invalid(f"person aliases must be an explicit list of distinct nonempty strings (use [] when none): {slug}")
     if not re.sub(r"^#{1,6}[^\n]*", "", body, flags=re.M).strip():
         raise Invalid(f"person page needs a cited body: {slug}")
     return {"id": slug, "name": name.strip(), "aliases": [a.strip() for a in aliases], "body": body}

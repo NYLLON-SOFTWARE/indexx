@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
-from indexx_status import audit, parse_catalog, Invalid
+from indexx_status import audit, parse_catalog, person_page, Invalid
 from indexx_dashboard import gather
 
 
@@ -248,6 +248,18 @@ class StatusTests(unittest.TestCase):
                                        "The caption identifies the speaker. [[sources/instagram/Example123]]\n"))
         self.assertTrue(audit(self.root)["ok"])
         self.assertEqual((self.item / "transcript.md").read_bytes(), original)
+
+    def test_person_page_requires_explicit_aliases_but_accepts_empty_list(self):
+        person = self.root / "wiki/entities/people/example-person.md"
+        person.parent.mkdir(parents=True)
+        front = {"id": "example-person", "name": "Example Person"}
+        body = "The caption identifies the speaker. [[sources/instagram/Example123]]\n"
+        person.write_text(self.document(front, body))
+        with self.assertRaisesRegex(Invalid, "aliases must be an explicit list"):
+            person_page(self.root, "example-person")
+        front["aliases"] = []
+        person.write_text(self.document(front, body))
+        self.assertEqual(person_page(self.root, "example-person")["aliases"], [])
 
     def test_stale_frontmatter_is_reported_without_mutation(self):
         original = "---\ntags:\n  - example\n---\nOld content.\n"

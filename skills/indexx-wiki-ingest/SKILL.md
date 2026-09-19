@@ -7,6 +7,8 @@ Compile wiki pages from transcript + info.json (+ optional poster frames). Maint
 
 ## Produce / update
 
+Resolve `LIBRARY_ROOT` from the private locator and `.indexx.json` to the confirmed, expanded absolute library path. Run local helpers using that path, independently of the current directory.
+
 1. Always write `wiki/sources/instagram/{id}.md` with `id`, `platform`, `handle`, `tags`, and `facets` front matter and a cited body. Follow the exact single-line JSON-compatible front matter format in SCHEMA.md.
 2. Create or update `wiki/entities/creators/{handle}.md` for the uploader; preserve supported existing content and link new sources. An uploader is not automatically the speaker or featured person.
 3. Review people using the source's explicit caption, attribution, transcript self-identification, or other retained evidence. Add source front matter `people` records with `id`, `name`, `role`, and a short specific `evidence` string, following SCHEMA.md. Roles are `speaker`, `featured`, or `mentioned`; a passing reference supports only `mentioned`. Never identify someone from voice/appearance resemblance, model familiarity, or a diarization label such as `speaker-0`. Leave uncertain identities unasserted and describe the uncertainty in the source body. Set `people_reviewed: true` only after this review; `people: []` then records no identifiable people, not unfinished work.
@@ -15,8 +17,8 @@ Compile wiki pages from transcript + info.json (+ optional poster frames). Maint
 6. Add facets as an inline JSON object: `{"form":"talk","topic":["learning"],"intent":"learn"}`. `form` is exactly one kebab-case value; `topic` has 1–3 unique domains; `intent` is one of `entertainment`, `inspiration`, `reference`, `learn`. Follow `wiki/taxonomies/facets.md` for meaning.
 7. Create `wiki/concepts/{slug}.md` only when ≥3 sources share a theme or the user explicitly asks. `concepts` front matter links only existing pages. Never one concept per reel. Person pages do not need three sources; one explicit attribution can support a person record. Create collections only when obvious or requested.
 8. Maintain `wiki/index.md` as a navigable list of pages with brief descriptions, organized into sources, people, creators, concepts, syntheses, and local views. Append `wiki/log.md` with dated, cited changes; preserve its history.
-9. While catalog status is still `transcribed` (or `downloaded` for image-only items), run `python3 scripts/indexx_status.py --root /path/to/library --id SHORTCODE --ready`.
-10. Only after that item passes, set `wiki_ingested`. On failure, preserve valid artifacts, leave `partial`, and report the missing evidence. After the authorized batch, run a full `indexx-lint` audit and refresh the derived local index with `python3 scripts/indexx_search.py build --root /path/to/library`. Report any build failure and do not present stale search results as current.
+9. While catalog status is still `transcribed` (or `downloaded` for image-only items), run `python3 "$LIBRARY_ROOT/scripts/indexx_status.py" --root "$LIBRARY_ROOT" --id SHORTCODE --ready`.
+10. Only after that item passes, set `wiki_ingested`. On failure, preserve valid artifacts, leave `partial`, and report the missing evidence. After the authorized batch, run a full `indexx-lint` audit and refresh the derived local index with `python3 "$LIBRARY_ROOT/scripts/indexx_search.py" build --root "$LIBRARY_ROOT"`. Report any build failure and do not present stale search results as current.
 
 ## Scope and supervision
 

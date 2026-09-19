@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import sys
 import tempfile
 from urllib.parse import quote, urlparse
@@ -296,7 +297,7 @@ def main() -> int:
         result = render_watchlist(root, report, name=args.name, title=" · ".join(title_parts))
         print(json.dumps(result, indent=2))
         return 0
-    except (ImportError, OSError, ValueError) as exc:
+    except (ImportError, OSError, ValueError, sqlite3.Error) as exc:
         print(f"Watchlist stopped: {exc}", file=sys.stderr)
         return 2
 

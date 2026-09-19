@@ -11,28 +11,28 @@ Only catalog `wiki_ingested` items that pass `SCHEMA.md` structural checks count
 
 ## Check
 
-Resolve the library and selected catalog through `.indexx.json`. On the user's local computer:
+Resolve the selected catalog through `.indexx.json` and set `LIBRARY_ROOT` to the confirmed, expanded absolute library path from the private locator. On the user's local computer, independently of the current directory:
 
 ```bash
-python3 scripts/indexx_status.py --root /path/to/library --json
+python3 "$LIBRARY_ROOT/scripts/indexx_status.py" --root "$LIBRARY_ROOT" --json
 # Equivalent human-readable wrapper:
-bash scripts/indexx-status.sh /path/to/library
-python3 scripts/indexx_search.py status --root /path/to/library
+bash "$LIBRARY_ROOT/scripts/indexx-status.sh" "$LIBRARY_ROOT"
+python3 "$LIBRARY_ROOT/scripts/indexx_search.py" status --root "$LIBRARY_ROOT"
 ```
 
-The full audit exits nonzero for invalid completion claims or broken config/catalog; unfinished work alone is not failure. Report `fully_processed`, `invalid_complete`, backlog, and excluded outcomes separately. Do not replace verified counts with status-label counts. Before marking one item complete, use `python3 scripts/indexx_status.py --root /path/to/library --id SHORTCODE --ready`; this avoids requiring a completion status before the evidence exists.
+The full audit exits nonzero for invalid completion claims or broken config/catalog; unfinished work alone is not failure. Report `fully_processed`, `invalid_complete`, backlog, and excluded outcomes separately. Do not replace verified counts with status-label counts. Before marking one item complete, use `python3 "$LIBRARY_ROOT/scripts/indexx_status.py" --root "$LIBRARY_ROOT" --id SHORTCODE --ready`; this avoids requiring a completion status before the evidence exists.
 
 Use `rg` for supplementary text searches, staying out of binary media:
 
 ```bash
-rg -n 'wiki_ingested|transcribed|downloaded' markdown catalog
-rg --files-without-match --glob '**/transcript.md' '^facets:' media/
-rg -g '*.md' 'comedy' markdown wiki media
+rg -n 'wiki_ingested|transcribed|downloaded' "$LIBRARY_ROOT/markdown" "$LIBRARY_ROOT/catalog"
+rg --files-without-match --glob '**/transcript.md' '^facets:' "$LIBRARY_ROOT/media/"
+rg -g '*.md' 'comedy' "$LIBRARY_ROOT/markdown" "$LIBRARY_ROOT/wiki" "$LIBRARY_ROOT/media"
 ```
 
 `--files-without-match` finds files without a pattern; `-L` follows symlinks and is not that check. The Python validator works without `rg` and has no third-party dependencies (Python 3.9+).
 
-Report search freshness and person-review coverage separately from media completion. A missing or stale `db/search.sqlite3` is a rebuildable derived-data issue. After authorized changes, run `python3 scripts/indexx_search.py build --root /path/to/library`; a rebuild alone does not fill missing annotations or prove that the wiki is correct. Generated watch views are snapshots and need regeneration after relevant changes.
+Report search freshness and person-review coverage separately from media completion. A missing or stale `db/search.sqlite3` is a rebuildable derived-data issue. After authorized changes, run `python3 "$LIBRARY_ROOT/scripts/indexx_search.py" build --root "$LIBRARY_ROOT"`; a rebuild alone does not fill missing annotations or prove that the wiki is correct. Generated watch views are snapshots and need regeneration after relevant changes.
 
 Review person/source consistency: each referenced person ID resolves to the matching page, canonical name/aliases are coherent, roles agree with retained evidence, and the person's cited body links the relevant sources across uploader handles. Keep creators separate from speakers. Check duplicate/ambiguous identities and orphan person pages; a `speaker-0` label or resemblance is not identity evidence. `people_reviewed: true` with an empty list means a completed review found no identifiable people; absent/false review flags remain a coverage gap. Do not retrofit all old items or rewrite transcripts merely to improve that count.
 

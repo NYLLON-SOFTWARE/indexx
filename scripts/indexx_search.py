@@ -22,7 +22,7 @@ from typing import Optional
 import indexx_status as status
 
 CACHE = "db/search.sqlite3"
-VERSION = 4
+VERSION = 5
 APPLICATION_ID = 0x49445858
 ROLES = {"speaker", "featured", "mentioned"}
 
