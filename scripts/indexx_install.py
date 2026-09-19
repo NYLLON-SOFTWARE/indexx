@@ -24,7 +24,7 @@ import uuid
 SOURCE = Path(__file__).resolve().parent.parent
 SUPPORT = ("AGENTS.md", "SCHEMA.md", "README.md", ".gitignore")
 RUNTIME_SCRIPTS = ("indexx_status.py", "indexx-status.sh", "indexx_progress.py", "indexx_dashboard.py",
-                   "indexx_search.py", "indexx_watch.py")
+                   "indexx_search.py", "indexx_watch.py", "indexx_update.py")
 DIRECTORIES = (
     "catalog", "markdown/instagram", "media/instagram", "wiki/sources/instagram",
     "wiki/entities/creators", "wiki/entities/people", "wiki/concepts", "wiki/syntheses",

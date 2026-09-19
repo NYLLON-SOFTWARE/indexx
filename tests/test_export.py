@@ -35,9 +35,9 @@ class ExportTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             return indexx_export.main(["--root", str(self.root), *arguments])
 
-    def test_all_eleven_skill_bodies_and_descriptions_match_sources(self):
+    def test_all_reviewed_skill_bodies_and_descriptions_match_sources(self):
         payload = indexx_export.build_payload(self.root)
-        self.assertEqual(len(payload["skills"]), 11)
+        self.assertEqual(len(payload["skills"]), 12)
         self.assertEqual([skill["name"] for skill in payload["skills"]],
                          list(indexx_export.PUBLIC_SKILLS))
         for skill in payload["skills"]:

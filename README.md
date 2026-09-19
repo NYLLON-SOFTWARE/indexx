@@ -10,7 +10,7 @@ A public INDEXX template link is not published in this repository yet. Do not as
 
 If a maintainer provides an INDEXX template link, open its preview and choose **Add to Grok Bot**. The maintainer should provide the corresponding full Git commit ID. This is Grok's [native template sharing flow](https://docs.x.ai/grok-bot/bots#share-a-bot).
 
-Until a template is published, create an INDEXX bot in Grok and supply the repository's reviewed profile and 11 skill definitions from `docs/bot-share-payload.json`. Ask it to save those instruction sets as the named skills and verify they are available. The bundle is generated from `docs/bot-template.json` and `skills/`; it contains no live memories or installation state. See [CONTRIBUTING.md](CONTRIBUTING.md) for publishing a template.
+Until a template is published, create an INDEXX bot in Grok and supply the repository's reviewed profile and 12 skill definitions from `docs/bot-share-payload.json`. Ask it to save those instruction sets as the named skills and verify they are available. The bundle is generated from `docs/bot-template.json` and `skills/`; it contains no live memories or installation state. See [CONTRIBUTING.md](CONTRIBUTING.md) for publishing a template.
 
 Then tell INDEXX **“set up INDEXX”** and provide the release's full commit ID. Setup will:
 
@@ -36,38 +36,23 @@ python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_CO
 
 The installer checks support-file conflicts, catalog compatibility, and provider configuration before changing the library. `--check` prints the same plan without applying it. A blocked plan exits nonzero and leaves the library and installation manifest unchanged. A ready plan can create missing support files, configuration fields, and templates; it preserves catalogs, media, transcripts, wiki pages, taxonomy, and provider/batch choices.
 
-### Upgrade an existing library
+### Update an existing bot
 
-Update the existing bot's saved profile and 11 skills from the pinned release as well as its local support files. Reading a checkout does not verify that saved skills were updated. Preserve private memories, connections, routines, and the library locator; the public bundle's empty arrays are not instructions to clear private state.
+Tell the bot:
 
-Plan the local upgrade from the clean source checkout:
+> Update INDEXX.
 
-```bash
-python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_COMMIT" --refresh-support --check
-```
+The `indexx-update` skill finds the current commit on the trusted repository's `main` branch, checks that CI passed for that exact commit, and pins it for the entire update. You do not need to find a commit ID or repeat preservation instructions. **“Check for INDEXX updates”** only checks and reports; it does not install anything. Repository access and Grok's local command approvals still apply.
 
-If the plan reports an old catalog or provider configuration, preview the migration:
+The update refreshes both the saved Grok profile/skills and local support files, previews any required catalog/config migration, and backs up reviewed replacements. It preserves your archive, provider selection, settings, memories, routines, and connections. It finishes with an artifact audit and a fresh local search index. Pending or failed CI, real customizations, and incomplete steps are reported rather than hidden. Updates do not download videos, retranscribe, run paid calls, annotate the backlog, or publish templates.
 
-```bash
-python3 scripts/indexx_migrate.py --root "$LIBRARY_ROOT"
-```
+**One-time bootstrap for older bots:** after this release is merged and CI passes, tell your existing bot:
 
-Review the result, then run the same command with `--apply`. The migration backs up original files locally before updating the selected catalog and configuration. It preserves entry identities, ordering, extra columns, and cursor metadata; adds `media_path`; and retains replaced statuses in `legacy_status`. Legacy `active` entries become `discovered` when no processing evidence is found, or `partial` when existing item artifacts need review. Existing `wiki_ingested` claims still need the completion audit. Media paths come from verified item metadata, not guessed folder names. Ambiguous or malformed data stops the migration for review.
+> From https://github.com/kropdx/indexx, verify the current main commit has passing repository CI, then read `skills/indexx-update/SKILL.md` at that exact commit and follow it to update this existing bot and library. Save the update skill too, so future requests need only “Update INDEXX.”
 
-Legacy `stt.primary`/`stt.fallback` values do not establish an explicit provider selection. If a valid `stt.provider` is already recorded, migration preserves it and retires obsolete defaults without asking again. Otherwise supply `--provider elevenlabs` or `--provider grok` only for the user's chosen provider, using the same option for preview and `--apply`. This migration is not a provider-switch command. No downloads or paid calls are made.
+The skill handles release discovery, the pinned source checkout, backups, migration, and verification. A GitHub merge alone does not refresh a running bot or its saved skills. A bot unable to edit saved definitions must report that remaining manual step.
 
-`--refresh-support` updates managed files that still match their recorded hashes. Other differences are reported as unmanaged or modified files, rather than assumed to be intentional customizations. Review those file diffs. To replace a specific reviewed file with its release version, add a separate `--replace-support` argument for each file, using identical arguments for the check and apply commands. For example:
-
-```bash
-python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_COMMIT" --refresh-support --replace-support scripts/indexx_status.py --check
-python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_COMMIT" --refresh-support --replace-support scripts/indexx_status.py
-```
-
-Only the installer's allowlisted distribution support files can be selected. Their originals are backed up under `logs/install-backups/` before replacement; catalog, media, transcript, and wiki files cannot be selected. Unresolved conflicts block installation. Preserve genuine local instructions when reviewing replacements; do not fabricate managed hashes to bypass a conflict.
-
-After a successful installation, `logs/install.json` records the installed support revision and hashes. Older installer versions could record a requested revision despite conflicts, so an old revision marker alone is not proof of an upgrade. Run the installed `indexx_status.py` audit afterward and report support installation, catalog migration, and item validation separately. Format migration does not prove the archive's completion claims or authorize reprocessing existing media.
-
-A library move is a separate operation; setup will not silently repoint an existing config.
+For maintainers, the detailed procedure is in [the update skill](skills/indexx-update/SKILL.md). The read-only release resolver is `scripts/indexx_update.py`; it requires authenticated GitHub CLI (`gh`) access and is installed with the library support scripts. It does not modify the library or update Grok by itself. `logs/install.json` tracks local support installation; it is not proof of saved-skill updates or artifact validity.
 
 ### Search upgrade without reprocessing
 
@@ -159,6 +144,7 @@ The second command checks readiness **before** the bot changes the status to `wi
 | Skill | Purpose |
 | --- | --- |
 | `indexx-setup` | Install, repair, provider choice |
+| `indexx-update` | Check for releases; update saved bot instructions and local support |
 | `indexx-add` | Route Saved refreshes and supported public Instagram URLs |
 | `indexx-instagram-saves-index` | Discover Saved entries and maintain crawl cursors |
 | `indexx-instagram-enrich` | Public metadata through ScrapeCreators |
