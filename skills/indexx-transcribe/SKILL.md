@@ -14,7 +14,7 @@ Require only the selected provider's credentials, stored in the secure vault/con
 - **Grok:** `POST https://api.x.ai/v1/stt` with explicit `model=grok-voice-transcribe-2.0`, using `XAI_API_KEY`. Request word timestamps; use the spoken language when known instead of blindly forcing English. Apply optional formatting, diarization and keyterms only as supported by the current API.
 - **ElevenLabs:** use the connected Scribe transcription tool with word timestamps and record the actual model. Authenticate ElevenLabs only when selected; this path does not require `XAI_API_KEY`.
 
-Never use ScrapeCreators transcription endpoints or local Whisper. Optional Grok visual analysis is a separate remote processing step; disclose it in the job scope and never stage media in `/workspace`. It cannot replace an actual transcript for speech.
+Never use ScrapeCreators transcription endpoints or local Whisper. Optional Grok visual analysis is a separate remote processing step; disclose frames/video and any included audio in the approved job scope. Prefer locally extracted still frames when only visuals are needed, and never stage media in `/workspace`. It cannot replace an actual transcript for speech.
 
 ## Scope, spending and restart
 

@@ -13,7 +13,7 @@ This is a Grok Bot workflow. Its profile and skills operate a media library on t
 ## Data boundaries
 
 - The canonical archive is the chosen local root (`canonical: mac`). Media downloads and audio extraction run on that Mac. Never stage raw media anywhere on the Grok cloud computer, including temporary directories.
-- A local archive does not mean local processing: audio goes directly from the Mac to the selected transcription service; content returned to the hosted bot for wiki work enters its cloud context. Optional Grok video analysis also sends visual content to Grok and must be included in the user's chosen processing scope.
+- A local archive does not mean local processing: audio goes directly from the Mac to the selected transcription service; content returned to the hosted bot for wiki work enters its cloud context. Optional Grok analysis sends frames or video to Grok, including any audio track in an uploaded video; include those transfers explicitly in the user's chosen processing scope.
 - Cloud workspace `/workspace/INDEXX` may contain only explicitly requested markdown copies. Sync is optional and not implemented automatically. Do not copy `.indexx.json`, job journals, installation logs, or media there.
 - Instagram browser sessions and cloud files are shared with the account's other bots. Connector authorization is account-wide. Never promise these stay on the Mac or are isolated to this bot.
 - Credentials belong in supported secure connection/secret flows. Do not put API keys, cookies, or passwords in chat, markdown, scripts, or `.indexx.json`.

@@ -45,7 +45,7 @@ For a requested upgrade, use `--refresh-support`. The installer replaces only pr
 | Downloaded video/images, extracted audio, saved transcripts | Your chosen local archive; no raw media staged on Grok's cloud computer |
 | Audio sent for transcription | Directly from the Mac to your selected xAI or ElevenLabs service |
 | Captions, transcripts, and other content read by the bot to build the wiki | The hosted bot's cloud processing context, even when files remain local |
-| Optional Grok video analysis | Visual content sent to Grok; include this in the processing scope you choose |
+| Optional Grok video analysis | Frames or video sent to Grok, including any audio track in an uploaded video; include this in the processing scope you choose |
 | Public Instagram lookup | Post URL/identifier sent to ScrapeCreators; returned media downloaded directly on the Mac |
 | Instagram login used in Grok's browser | The account's shared cloud browser session, available to its other bots |
 | Connector access and API credentials | Supported secure connection/secret systems; never library files or public templates |
