@@ -20,6 +20,7 @@ PUBLIC_SKILLS = (
     "indexx-setup",
     "indexx-sync",
     "indexx-transcribe",
+    "indexx-update",
     "indexx-wiki-ingest",
 )
 MANIFEST_PATH = Path("docs/bot-template.json")
@@ -132,7 +133,7 @@ def main(argv=None):
             if not destination.exists() or destination.read_bytes() != rendered.encode("utf-8"):
                 print("Public bundle is stale. Run python3 scripts/indexx_export.py.", file=sys.stderr)
                 return 1
-            print("Public source bundle matches the reviewed manifest and all 11 skills.")
+            print("Public source bundle matches the reviewed manifest and all {} skills.".format(len(PUBLIC_SKILLS)))
         else:
             destination.write_text(rendered, encoding="utf-8")
             print("Wrote {} from reviewed repository sources.".format(OUTPUT_PATH))
