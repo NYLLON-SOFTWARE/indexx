@@ -23,7 +23,7 @@ from indexx_status import ID_PATTERN, Invalid, STATUSES, instagram_id, parse_cat
 
 # These paths belong to support, runtime state, or artifacts, not a catalog.
 RESERVED_FILES = {".indexx.json", "AGENTS.md", "SCHEMA.md", "README.md", ".gitignore"}
-RESERVED_TREES = {"scripts", "logs", "media", "wiki", ".git", ".codex", ".agents"}
+RESERVED_TREES = {"scripts", "logs", "media", "wiki", "db", ".git", ".codex", ".agents"}
 LIBRARY_DIRECTORIES = {"catalog", "markdown", "markdown/instagram"} | RESERVED_TREES
 
 

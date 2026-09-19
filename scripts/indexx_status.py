@@ -162,6 +162,78 @@ def load_catalog(root: Path) -> tuple[dict[str, Any], Path, list[dict[str, str]]
     return cfg, catalog, parse_catalog(read_text(catalog))
 
 
+def person_page(root: Path, slug: str) -> dict[str, Any]:
+    """Read an explicit person identity; names are never inferred from media."""
+    if not isinstance(slug, str) or not SLUG_PATTERN.fullmatch(slug):
+        raise Invalid("person id must be a kebab-case slug")
+    path = contained(root, f"wiki/entities/people/{slug}.md")
+    front, body = frontmatter(read_text(path))
+    if front.get("id") != slug:
+        raise Invalid(f"person page id must match filename: {slug}")
+    name, aliases = front.get("name"), front.get("aliases")
+    if not isinstance(name, str) or not name.strip():
+        raise Invalid(f"person page needs a name: {slug}")
+    if (not isinstance(aliases, list)
+            or not all(isinstance(a, str) and a.strip() for a in aliases)
+            or len({a.strip().casefold() for a in aliases}) != len(aliases)):
+        raise Invalid(f"person aliases must be an explicit list of distinct nonempty strings (use [] when none): {slug}")
+    if not re.sub(r"^#{1,6}[^\n]*", "", body, flags=re.M).strip():
+        raise Invalid(f"person page needs a cited body: {slug}")
+    return {"id": slug, "name": name.strip(), "aliases": [a.strip() for a in aliases], "body": body}
+
+
+def person_annotations(front: dict[str, Any], root: Path) -> list[dict[str, str]]:
+    """Validate optional source annotations without invalidating older libraries.
+
+    Evidence is a source-grounded explanation, not proof of correct attribution.
+    The ingest/lint content review must check it against the cited source.
+    """
+    reviewed = front.get("people_reviewed", False)
+    if not isinstance(reviewed, bool):
+        raise Invalid("people_reviewed must be a boolean")
+    if reviewed and "people" not in front:
+        raise Invalid("people_reviewed requires an explicit people list (possibly empty)")
+    people = front.get("people", [])
+    if not isinstance(people, list):
+        raise Invalid("people must be an inline JSON array")
+    seen = set()
+    result = []
+    for person in people:
+        if not isinstance(person, dict) or set(person) != {"id", "name", "role", "evidence"}:
+            raise Invalid("each person needs exactly id, name, role, and evidence")
+        if not all(isinstance(person[key], str) and person[key].strip() for key in person):
+            raise Invalid("person id/name/role/evidence must be nonempty strings")
+        if person["role"] not in ("speaker", "featured", "mentioned"):
+            raise Invalid("person role must be speaker, featured, or mentioned")
+        key = (person["id"], person["role"])
+        if key in seen:
+            raise Invalid("duplicate person id/role")
+        seen.add(key)
+        page = person_page(root, person["id"])
+        if person["name"].strip().casefold() != page["name"].casefold():
+            raise Invalid(f"person name does not match canonical page: {person['id']}")
+        item_id = front.get("id")
+        if isinstance(item_id, str) and ID_PATTERN.fullmatch(item_id):
+            # Require an actual local link, not a pathname mentioned in prose.
+            target = f"sources/instagram/{item_id}"
+            wiki_targets = [value.split("|", 1)[0].split("#", 1)[0].strip()
+                            for value in re.findall(r"\[\[([^\]\n]+)\]\]", page["body"])]
+            linked = any(value in (target, target + ".md", "wiki/" + target, "wiki/" + target + ".md")
+                         for value in wiki_targets)
+            parent = root / "wiki/entities/people"
+            expected = (root / "wiki" / (target + ".md")).resolve()
+            for value in re.findall(r"\[[^\]\n]*\]\(<?([^\s)>]+)>?\)", page["body"]):
+                parsed = urlparse(value)
+                if parsed.scheme or parsed.netloc:
+                    continue
+                if (parent / unquote(parsed.path)).resolve() == expected:
+                    linked = True
+            if not linked:
+                raise Invalid(f"person page must link source {item_id}: {person['id']}")
+        result.append(dict(person))
+    return result
+
+
 def classification(front: dict[str, Any]) -> None:
     tags, facets = front.get("tags"), front.get("facets")
     if (not isinstance(tags, list) or not 5 <= len(tags) <= 10
@@ -304,6 +376,7 @@ def validate_item(root: Path, row: dict[str, str]) -> list[str]:
             if source_front.get(field) != value:
                 raise Invalid(f"wiki source front matter {field} does not match info.json")
         classification(source_front)
+        person_annotations(source_front, root)
         read_text(contained(root, f"wiki/entities/creators/{handle}.md"))
         if kind in ("image", "carousel"):
             if speech != "not_applicable":
