@@ -15,9 +15,8 @@ Personal media wiki: Instagram Saved → markdown catalog → local media → tr
 
 ## Connectors
 
-1. **xAI / Grok Voice Transcribe 2.0** — primary STT. `XAI_API_KEY` in vault only.
+1. **Transcription — user chooses during setup:** recommend **Grok Voice Transcribe 2.0** (`XAI_API_KEY` in vault); offer **ElevenLabs Scribe** as an optional alternative. Persist `stt.provider` (`grok` or `elevenlabs`) in `.indexx.json`; connect only the chosen provider. Ask if no choice is saved. Never switch automatically.
 2. **ScrapeCreators** — custom remote MCP for public IG **metadata + durable media URLs / downloads**. Not transcripts. API key in vault.
-3. **ElevenLabs** — optional Scribe fallback.
 
 Estimate cost/credits and get OK before paid batches.
 

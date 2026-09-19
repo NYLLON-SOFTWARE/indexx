@@ -17,7 +17,7 @@ Use `--clear` when starting a new batch.
 
 ## Glyphs / stages
 - Glyphs: `○` pending · `…` running · `✓` done · `✗` fail/skip
-- Stages: `dl` download · `aud` audio.mp3 · `watch` Grok watch · `stt` Grok STT · `tags` tags/facets · `wiki` wiki ingest
+- Stages: `dl` download · `aud` audio.mp3 · `watch` Grok watch · `stt` selected-provider transcription · `tags` tags/facets · `wiki` wiki ingest
 
 ## Chat convention
 At every stage gate, rewrite the board **and** send one short chat ping (what flipped). Do not dump the whole table every time. At batch end, quote or attach the final board.
@@ -25,5 +25,5 @@ At every stage gate, rewrite the board **and** send one short chat ping (what fl
 Also keep the in-chat todo checklist updated. Point the user at the agent computer preview if they want to watch desktop work live.
 
 ## Policy reminders
-- STT = Grok Voice Transcribe 2.0 primary; ElevenLabs optional fallback (never ScrapeCreators transcript, never mlx-whisper)
+- STT uses `.indexx.json` → `stt.provider`, selected during setup: Grok Voice Transcribe 2.0 (recommended) or optional ElevenLabs Scribe. Never switch automatically; never ScrapeCreators transcript or mlx-whisper.
 - Estimate + OK before ScrapeCreators download spend or paid STT spend

@@ -1,6 +1,6 @@
 # INDEXX
 
-**INDEXX** is a personal media wiki for Instagram Saved (and later other sources). Honest markdown catalog, media **on your computer**, **Grok Voice Transcribe 2.0**, tags + facets, compiled wiki pages.
+**INDEXX** is a personal media wiki for Instagram Saved (and later other sources). Honest markdown catalog, media **on your computer**, transcription with **Grok Voice Transcribe 2.0 (recommended)** or your choice of **ElevenLabs Scribe**, tags + facets, compiled wiki pages.
 
 This repo is the **open-source library + skill sources** (MIT). Day-to-day you run INDEXX as a **Grok Bot**; the bot scaffolds your Mac library and runs the pipeline.
 
@@ -14,6 +14,7 @@ This repo is the **open-source library + skill sources** (MIT). Day-to-day you r
    - **Windows:** `%USERPROFILE%\Documents\INDEXX` (may sync via OneDrive Documents)
    - **Linux:** `~/INDEXX`
    You can pick any path. You only approve the path, vault secrets, and any paid credit estimates.
+5. Choose your transcription service: **Grok Voice Transcribe 2.0 (recommended)** or **ElevenLabs Scribe (optional alternative)**. INDEXX saves the choice and connects only the service you select. It does not install ElevenLabs by default or switch providers automatically.
 
 Grok Bot’s desktop app runs on **macOS, Windows, and Linux**; register that computer so the bot can write the library on disk.
 
@@ -25,9 +26,9 @@ Have INDEXX confirm each item (it can drive most of this once you approve):
 
 ### In Grok Bot
 - [ ] INDEXX bot installed / imported
-- [ ] **`XAI_API_KEY`** in the vault (primary STT — Grok Voice Transcribe 2.0)
+- [ ] **Transcription provider selected during setup** and saved in `.indexx.json` (`stt.provider`)
+- [ ] **Selected provider connected:** `XAI_API_KEY` in the vault for Grok, or the authenticated ElevenLabs plugin if you chose Scribe; the other provider is not required
 - [ ] **ScrapeCreators** custom MCP connected (Instagram metadata + downloads only — **not** transcripts); API key in vault
-- [ ] **ElevenLabs** connected *(optional)* — Scribe fallback STT
 - [ ] Registered Mac / computer linked so the bot can write your library on disk
 - [ ] First-run: ask **`set up INDEXX`** → bot asks for library location → root created, `.indexx.json` written, catalog + wiki stubs ready
 
@@ -53,11 +54,18 @@ Have INDEXX confirm each item (it can drive most of this once you approve):
 
 **Cloud-folder note:** Mac may sync `Desktop` / `Documents` via **iCloud**; Windows often syncs `Documents` via **OneDrive**. That is separate from the Grok Bot `/workspace`. Suggested Documents defaults are convenient but can upload `media/` to Apple/Microsoft if those sync features are on. Prefer a non-synced path when local-only media matters.
 
-## Primary transcription
+## Choose transcription during setup
 
-1. **Grok Voice Transcribe 2.0** — primary STT (`XAI_API_KEY` in vault only)
-2. **ElevenLabs Scribe** — optional fallback
-3. **Grok video watch** — free visuals / no-speech triage
+Setup asks which service you want:
+
+| Choice | Setup |
+| --- | --- |
+| **Grok Voice Transcribe 2.0 (recommended)** | Save `stt.provider: "grok"`; add `XAI_API_KEY` through the vault |
+| **ElevenLabs Scribe (optional alternative)** | Save `stt.provider: "elevenlabs"`; connect/authenticate ElevenLabs only if chosen |
+
+Audio is sent to the selected provider for paid transcription. INDEXX estimates its cost before processing. A missing key or service error pauses transcription; it does not trigger a call to another provider. You can change your selection by asking INDEXX to change the transcription provider. Existing transcripts are preserved unless you explicitly request retranscription.
+
+The example config leaves `stt.provider` null until you choose. Older configs with `stt.primary` / `stt.fallback` prompt for a choice once during setup. Optional **Grok video watch** is separate visual/no-speech triage, not the transcription service.
 
 Do **not** use ScrapeCreators transcript endpoints or mlx-whisper.
 
@@ -76,7 +84,7 @@ Done = catalog `wiki_ingested` **and** SCHEMA checklist green (`SCHEMA.md`).
 | `indexx-instagram-saves-index` | Crawl Instagram Saved → catalog |
 | `indexx-instagram-enrich` | Metadata via ScrapeCreators |
 | `indexx-download` | Download media to Mac |
-| `indexx-transcribe` | Grok Voice Transcribe 2.0 |
+| `indexx-transcribe` | Selected provider: Grok (recommended) or optional ElevenLabs Scribe |
 | `indexx-wiki-ingest` | Tags, facets, wiki pages |
 | `indexx-query` / `indexx-lint` / `indexx-progress` | Query, health, live batch board |
 | `indexx-sync` | Markdown-only Mac ↔ workspace (stub) |
