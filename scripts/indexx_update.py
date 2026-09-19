@@ -84,6 +84,15 @@ def workflow_runs(commit: str, workflow_id: int) -> list[dict]:
     return runs
 
 
+def latest_run(commit: str, workflow_id: int) -> dict:
+    candidates = [run for run in workflow_runs(commit, workflow_id) if matches(run, commit, workflow_id)]
+    if not candidates:
+        raise ValueError("No validation push run on main was found for this exact commit")
+    if not all(all(positive_int(run.get(key)) for key in ("id", "run_number", "run_attempt")) for run in candidates):
+        raise ValueError("Validation run ordering or attempt evidence is missing")
+    return max(candidates, key=lambda run: (run["run_number"], run["id"], run["run_attempt"]))
+
+
 def resolve_release(revision: Optional[str] = None) -> dict:
     report = {"status": "blocked", "repo": REPO, "channel": CHANNEL, "commit": None,
               "main_commit": None, "ci": {"workflow": WORKFLOW}, "reason": None}
@@ -111,12 +120,7 @@ def resolve_release(revision: Optional[str] = None) -> dict:
         workflow_id = workflow.get("id")
         if workflow.get("path") != WORKFLOW or not positive_int(workflow_id):
             raise ValueError("GitHub did not return the trusted repository validation workflow")
-        candidates = [run for run in workflow_runs(commit, workflow_id) if matches(run, commit, workflow_id)]
-        if not candidates:
-            raise ValueError("No validation push run on main was found for this exact commit")
-        if not all(all(positive_int(run.get(key)) for key in ("id", "run_number", "run_attempt")) for run in candidates):
-            raise ValueError("Validation run ordering or attempt evidence is missing")
-        latest = max(candidates, key=lambda run: (run["run_number"], run["id"], run["run_attempt"]))
+        latest = latest_run(commit, workflow_id)
         # The list may still describe an old successful attempt while a rerun starts.
         # Fetch the selected run's current attempt instead of reusing that conclusion.
         current = gh_json(f"repos/{REPO}/actions/runs/{latest['id']}")
@@ -132,6 +136,15 @@ def resolve_release(revision: Optional[str] = None) -> dict:
                              "url": f"https://github.com/{REPO}/actions/runs/{current['id']}/attempts/{current['run_attempt']}"})
         if current.get("status") != "completed" or current.get("conclusion") != "success":
             raise ValueError("Latest validation run/attempt for this exact commit is not completed successfully")
+        # A different run can start while the selected run's detail is fetched.
+        # Re-list once rather than chasing changes or trusting an older green run.
+        # This verifies an observed snapshot, not a guarantee about future CI state.
+        refreshed = latest_run(commit, workflow_id)
+        if any(refreshed[key] != current[key] for key in ("id", "run_number", "run_attempt")):
+            raise ValueError("Latest validation run/attempt changed during lookup; retry the update check")
+        report["ci"].update(status=refreshed.get("status"), conclusion=refreshed.get("conclusion"))
+        if refreshed.get("status") != "completed" or refreshed.get("conclusion") != "success":
+            raise ValueError("Refreshed validation run/attempt is not completed successfully")
         report.update(status="ready", reason=None)
     except (ValueError, OSError, subprocess.SubprocessError) as exc:
         report["reason"] = str(exc)

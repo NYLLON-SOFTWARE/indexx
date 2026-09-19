@@ -38,6 +38,8 @@ class ReleaseTests(unittest.TestCase):
         self.main = MAIN
         self.after_first_ref = ADVANCED
         self.error_at = None
+        self.runs_after_detail = None
+        self.error_after_detail = None
         self.mock_process = mock.patch.object(updater.subprocess, "run", side_effect=self.gh)
         self.process = self.mock_process.start()
         self.addCleanup(self.mock_process.stop)
@@ -71,6 +73,10 @@ class ReleaseTests(unittest.TestCase):
             payload = {"total_count": len(self.runs), "workflow_runs": self.runs[(page - 1) * 100:page * 100]}
         elif "/actions/runs/" in endpoint:
             payload = self.details[int(endpoint.rsplit("/", 1)[1])]
+            if self.runs_after_detail is not None:
+                self.runs = self.runs_after_detail
+            if self.error_after_detail is not None:
+                self.error_at = self.error_after_detail
         else:
             self.fail("Unexpected API endpoint: " + endpoint)
         return subprocess.CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
@@ -186,9 +192,73 @@ class ReleaseTests(unittest.TestCase):
     def test_successful_latest_rerun_can_supersede_failed_attempt(self):
         self.runs = [run_record(conclusion="failure")]
         self.details[101] = run_record(attempt=2)
+        self.runs_after_detail = [run_record(attempt=2)]
         result = updater.resolve_release()
         self.assertEqual(result["status"], "ready")
         self.assertEqual(result["ci"]["run_attempt"], 2)
+
+    def test_new_run_appearing_during_detail_lookup_blocks_old_success(self):
+        for state, conclusion in (("queued", None), ("completed", "success")):
+            with self.subTest(state=state):
+                self.ref_calls = 0
+                self.calls.clear()
+                self.runs = [run_record()]
+                self.runs_after_detail = [run_record(), run_record(run_id=102, number=11, status=state, conclusion=conclusion)]
+                result = updater.resolve_release()
+                self.assertEqual(result["status"], "blocked")
+                self.assertIn("changed during lookup", result["reason"])
+                self.assertEqual(sum("/runs?" in call for call in self.calls), 2)
+                self.assertNotIn("repos/kropdx/indexx/actions/runs/102", self.calls)
+
+    def test_new_attempt_appearing_after_detail_lookup_blocks_old_success(self):
+        self.runs_after_detail = [run_record(attempt=2, status="in_progress", conclusion=None)]
+        result = updater.resolve_release()
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("changed during lookup", result["reason"])
+
+    def test_same_latest_attempt_must_still_be_completed_success_on_refresh(self):
+        for state, conclusion in (("queued", None), ("completed", "failure"), ("completed", None)):
+            with self.subTest(state=state, conclusion=conclusion):
+                self.ref_calls = 0
+                self.runs = [run_record()]
+                self.runs_after_detail = [run_record(status=state, conclusion=conclusion)]
+                result = updater.resolve_release()
+                self.assertEqual(result["status"], "blocked")
+                self.assertIn("Refreshed validation run", result["reason"])
+                self.assertEqual(result["ci"]["status"], state)
+                self.assertEqual(result["ci"]["conclusion"], conclusion)
+
+    def test_refreshed_latest_match_succeeds_without_chasing_main_or_other_runs(self):
+        self.runs_after_detail = [run_record(run_id=102, number=11, event="pull_request"), run_record()]
+        result = updater.resolve_release()
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["ci"]["run_id"], 101)
+        self.assertEqual(self.ref_calls, 1)
+        self.assertEqual(sum("/runs?" in call for call in self.calls), 2)
+        self.assertEqual(sum("/actions/runs/" in call for call in self.calls), 1)
+
+    def test_missing_or_malformed_refreshed_evidence_blocks(self):
+        malformed = run_record()
+        del malformed["run_attempt"]
+        for refreshed in ([], [run_record(head_sha=OLD)], [malformed]):
+            with self.subTest(refreshed=refreshed):
+                self.ref_calls = 0
+                self.runs = [run_record()]
+                self.runs_after_detail = refreshed
+                self.assertEqual(updater.resolve_release()["status"], "blocked")
+
+    def test_refresh_api_failure_blocks_after_successful_detail(self):
+        self.error_after_detail = "/runs?"
+        result = updater.resolve_release()
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("GitHub API request failed", result["reason"])
+
+    def test_stale_refreshed_attempt_cannot_confirm_successful_detail(self):
+        self.details[101] = run_record(attempt=2)
+        # The refreshed list still reports attempt1, so readiness is unverified.
+        result = updater.resolve_release()
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("changed during lookup", result["reason"])
 
     def test_stale_or_wrong_run_detail_is_blocked(self):
         self.runs = [run_record(attempt=2)]
