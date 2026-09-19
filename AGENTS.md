@@ -1,6 +1,6 @@
 # INDEXX — agent notes (library template)
 
-Copy this file to the **library root** on the user's computer (e.g. `~/Documents/INDEXX/AGENTS.md`). Skills resolve paths from `.indexx.json` — never hardcode usernames or machine IDs. On first setup, **ask where to store the library**; on Mac **suggest** `~/Documents/INDEXX` but require confirm (warn about iCloud Documents sync).
+Copy this file to the **library root** on the user's computer (e.g. `~/Documents/INDEXX/AGENTS.md`). Skills resolve paths from `.indexx.json` — never hardcode usernames or machine IDs. On first setup, **ask where to store the library**; suggest Mac `~/Documents/INDEXX`, Windows `%USERPROFILE%\Documents\INDEXX`, Linux `~/INDEXX`, but require confirm (warn about iCloud / OneDrive Documents sync).
 
 ## What INDEXX is
 

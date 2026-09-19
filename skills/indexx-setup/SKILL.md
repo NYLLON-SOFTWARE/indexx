@@ -34,9 +34,12 @@ Also document connectors + these tools in library `AGENTS.md` and `README.md` wh
 ## Steps
 1. Check agent memory / existing `.indexx.json` for a data root. If present and the folder exists, confirm briefly and stop (unless they asked to move it).
 2. **Always ask where to store the library** (widget). Do not silently create a folder.
-   - On **Mac**, **suggest** `~/Documents/INDEXX` as the default choice, but require an explicit confirm or a custom path.
-   - Mention that `~/Documents` may sync via **iCloud**; if they want media off Apple’s cloud, suggest `~/INDEXX` or another non-synced path / external volume.
-   - On other OSes, suggest a sensible home-directory folder (e.g. `~/INDEXX`) and still require confirm.
+   - Detect OS when possible and **suggest** a default, but require an explicit confirm or a custom path:
+     - **Mac:** `~/Documents/INDEXX` (note: may sync via **iCloud** Documents)
+     - **Windows:** `%USERPROFILE%\Documents\INDEXX` (note: may sync via **OneDrive** Documents)
+     - **Linux / other:** `~/INDEXX`
+   - If they want media only on-disk (not vendor cloud), suggest a non-synced path (Mac/Linux `~/INDEXX`, Windows `%USERPROFILE%\INDEXX`, or an external volume).
+   - Grok Bot desktop runs on macOS, Windows, and Linux — the registered computer is where the library is created.
 3. On their computer (registered machine Shell), expand `~` and create the tree from AGENTS.md (catalog, markdown/instagram legacy catalog, media, wiki, logs, db/scripts) plus `AGENTS.md`, `SCHEMA.md`, `README.md`, `.indexx.json`, `.gitignore`. If data exists, reuse — never wipe.
 4. Write `.indexx.json` with absolute `root`, `canonical: mac`, `cloud_workspace: /workspace/INDEXX`, `paths.use_catalog: legacy`, legacy + target catalog paths, `cloud_workspace_forbidden: ["media"]`.
 5. Ensure Instagram catalog exists (empty cursor + table) via the saves-index skill conventions.
@@ -45,4 +48,4 @@ Also document connectors + these tools in library `AGENTS.md` and `README.md` wh
 8. Store absolute root in agent profile memory. Tell the user the path; remind them media must not go to Grok Bot `/workspace`, and iCloud sync is their choice via path.
 
 ## Rules
-- User computer by default. **Ask before choosing the library path**; suggest Mac default, never assume. Never move/delete a root without an explicit ask. No media on `/workspace`.
+- User computer by default. **Ask before choosing the library path**; suggest the OS default above, never assume. Never move/delete a root without an explicit ask. No media on `/workspace`.
