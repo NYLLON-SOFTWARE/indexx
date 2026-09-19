@@ -69,11 +69,14 @@ def provider_config(config: dict, provider: Optional[str]) -> tuple[dict, bool]:
     if chosen in ("grok", "elevenlabs") and provider is not None and provider != chosen:
         raise Invalid("Migration cannot switch an existing valid provider selection")
     legacy = "primary" in stt or "fallback" in stt or "provider" not in stt or chosen not in (None, "grok", "elevenlabs")
-    if legacy and provider is None:
+    if legacy and provider is None and chosen not in ("grok", "elevenlabs"):
         raise Invalid("Legacy provider/primary/fallback settings require explicit --provider grok|elevenlabs; no selection is inferred")
     updated = dict(stt)
     if provider is not None:
         updated["provider"] = provider
+    # A canonical selection already records the user's choice. Obsolete defaults
+    # cannot override it or require the same choice again; backups preserve them.
+    if provider is not None or chosen in ("grok", "elevenlabs"):
         updated.pop("primary", None)
         updated.pop("fallback", None)
     result = dict(config)
@@ -82,9 +85,14 @@ def provider_config(config: dict, provider: Optional[str]) -> tuple[dict, bool]:
 
 
 def split_table_line(line: str) -> tuple[str, list[str], str]:
-    first, last = line.find("|"), line.rfind("|")
-    if first < 0 or first == last or line[:first].strip() or line[last + 1:].strip():
-        raise Invalid("Catalog table rows must start and end with a pipe")
+    # Match the current status parser's delimiter rule, including at the edges.
+    # A final escaped pipe belongs to a cell and cannot terminate the row.
+    delimiters = list(re.finditer(r"(?<!\\)\|", line))
+    if len(delimiters) < 2:
+        raise Invalid("Catalog table rows must start and end with an unescaped pipe")
+    first, last = delimiters[0].start(), delimiters[-1].start()
+    if line[:first].strip() or line[last + 1:].strip():
+        raise Invalid("Catalog table rows must start and end with an unescaped pipe")
     return line[:first], re.split(r"(?<!\\)\|", line[first + 1:last]), line[last + 1:]
 
 
@@ -329,7 +337,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True, help="Existing absolute library root")
     parser.add_argument("--apply", action="store_true", help="Apply the plan after timestamped backups")
-    parser.add_argument("--provider", choices=("grok", "elevenlabs"), help="Explicit choice required for legacy provider/primary/fallback settings")
+    parser.add_argument("--provider", choices=("grok", "elevenlabs"), help="Explicit choice for missing/invalid provider; never switches a valid selection")
     args = parser.parse_args()
     try:
         action = apply_migration if args.apply else plan_migration
