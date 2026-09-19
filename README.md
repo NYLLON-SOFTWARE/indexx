@@ -46,9 +46,9 @@ The `indexx-update` skill finds the current commit on the trusted repository's `
 
 The update refreshes both the saved Grok profile/skills and local support files, previews any required catalog/config migration, and backs up reviewed replacements. It preserves your archive, provider selection, settings, memories, routines, and connections. It finishes with an artifact audit and a fresh local search index. Pending or failed CI, real customizations, and incomplete steps are reported rather than hidden. Updates do not download videos, retranscribe, run paid calls, annotate the backlog, or publish templates.
 
-**One-time bootstrap for older bots:** after this release is merged and CI passes, tell your existing bot:
+**One-time bootstrap for older bots, including those configured for the former personal repository:** tell your existing bot:
 
-> From https://github.com/kropdx/indexx, verify the current main commit has passing repository CI, then read `skills/indexx-update/SKILL.md` at that exact commit and follow it to update this existing bot and library. Save the update skill too, so future requests need only “Update INDEXX.”
+> From https://github.com/NYLLON-SOFTWARE/indexx, verify the current main commit has passing repository CI, then read `skills/indexx-update/SKILL.md` at that exact commit and follow it to update this existing bot and library. Save the update skill too, so future requests need only “Update INDEXX.”
 
 The skill handles release discovery, the pinned source checkout, backups, migration, and verification. A GitHub merge alone does not refresh a running bot or its saved skills. A bot unable to edit saved definitions must report that remaining manual step.
 
