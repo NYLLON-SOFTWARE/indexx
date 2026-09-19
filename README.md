@@ -34,9 +34,40 @@ python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_CO
 python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_COMMIT"
 ```
 
-The installer copies the local helpers, schema, instructions, catalog stub, and wiki templates. Running it again repairs missing files and fills missing configuration fields. Existing catalog entries, media, transcripts, wiki pages, taxonomy, and provider/batch choices are preserved.
+The installer checks support-file conflicts, catalog compatibility, and provider configuration before changing the library. `--check` prints the same plan without applying it. A blocked plan exits nonzero and leaves the library and installation manifest unchanged. A ready plan can create missing support files, configuration fields, and templates; it preserves catalogs, media, transcripts, wiki pages, taxonomy, and provider/batch choices.
 
-For a requested upgrade, use `--refresh-support`. The installer replaces only previously managed support files that have not been customized, and reports other differences for review. Per-file hashes and source revision are recorded locally in `logs/install.json`. A library move is a separate operation; setup will not silently repoint an existing config.
+### Upgrade an existing library
+
+Update the existing bot's saved profile and 11 skills from the pinned release as well as its local support files. Reading a checkout does not verify that saved skills were updated. Preserve private memories, connections, routines, and the library locator; the public bundle's empty arrays are not instructions to clear private state.
+
+Plan the local upgrade from the clean source checkout:
+
+```bash
+python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_COMMIT" --refresh-support --check
+```
+
+If the plan reports an old catalog or provider configuration, preview the migration:
+
+```bash
+python3 scripts/indexx_migrate.py --root "$LIBRARY_ROOT"
+```
+
+Review the result, then run the same command with `--apply`. The migration backs up original files locally before updating the selected catalog and configuration. It preserves entry identities, ordering, extra columns, and cursor metadata; adds `media_path`; and retains replaced statuses in `legacy_status`. Legacy `active` entries become `discovered` when no processing evidence is found, or `partial` when existing item artifacts need review. Existing `wiki_ingested` claims still need the completion audit. Media paths come from verified item metadata, not guessed folder names. Ambiguous or malformed data stops the migration for review.
+
+Legacy `stt.primary`/`stt.fallback` values do not establish an explicit provider selection. Supply `--provider elevenlabs` or `--provider grok` on the migration command only for the user's chosen provider. Use the same option for preview and `--apply`. A valid existing provider is preserved; this migration is not a provider-switch command. No downloads or paid calls are made.
+
+`--refresh-support` updates managed files that still match their recorded hashes. Other differences are reported as unmanaged or modified files, rather than assumed to be intentional customizations. Review those file diffs. To replace a specific reviewed file with its release version, add a separate `--replace-support` argument for each file, using identical arguments for the check and apply commands. For example:
+
+```bash
+python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_COMMIT" --refresh-support --replace-support scripts/indexx_status.py --check
+python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_COMMIT" --refresh-support --replace-support scripts/indexx_status.py
+```
+
+Only the eight distribution support files can be selected. Their originals are backed up under `logs/install-backups/` before replacement; catalog, media, transcript, and wiki files cannot be selected. Unresolved conflicts block installation. Preserve genuine local instructions when reviewing replacements; do not fabricate managed hashes to bypass a conflict.
+
+After a successful installation, `logs/install.json` records the installed support revision and hashes. Older installer versions could record a requested revision despite conflicts, so an old revision marker alone is not proof of an upgrade. Run the installed `indexx_status.py` audit afterward and report support installation, catalog migration, and item validation separately. Format migration does not prove the archive's completion claims or authorize reprocessing existing media.
+
+A library move is a separate operation; setup will not silently repoint an existing config.
 
 ## Privacy: local archive, cloud processing
 

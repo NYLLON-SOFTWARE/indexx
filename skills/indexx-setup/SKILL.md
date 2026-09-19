@@ -1,7 +1,7 @@
 ---
 name: INDEXX setup
 description: >-
-  Use when setting up or repairing an INDEXX library on a registered Mac, or when changing its location or selected transcription provider.
+  Use when setting up, repairing, or upgrading an INDEXX library on a registered Mac, or when changing its location or selected transcription provider.
 ---
 Set up the user's local archive and the Grok Bot skills that operate it. This release supports **macOS**. Windows/Linux desktop availability does not establish support for this library workflow; explain that those installations are unverified instead of writing Mac configuration on another OS.
 
@@ -26,7 +26,21 @@ python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_CO
 
 `LIBRARY_ROOT` is the expanded absolute path the user confirmed; `RELEASE_COMMIT` is the supplied full commit. Quote paths. The installer verifies the clean pinned checkout, macOS, Python 3.9+, `ffmpeg`, `ffprobe`, `rg`, and local write access. If tools are missing, offer the appropriate Mac install commands (for example `brew install python ffmpeg ripgrep` if Homebrew is available) under the user's local execution policy, then recheck.
 
-The installer creates the configured catalog, wiki taxonomy templates, support scripts and documents, and `.indexx.json`. It fills missing configuration fields and preserves existing provider/batch choices. It does not replace existing catalogs, wiki pages, or transcripts. For an explicitly requested support upgrade, add `--refresh-support`; only previously managed, unmodified support files are replaced. Report customized-file conflicts for review. An existing directory alone is never proof setup is complete.
+The installer plans support files, configuration, and catalog compatibility before changing the library. `--check` reports that full plan; it is not just a prerequisite check. A blocked plan returns nonzero without changing library files or the manifest. When ready, the installer creates missing support files, catalog/wiki templates, and config fields while preserving user choices and existing content. An existing directory or an old manifest revision alone is never proof setup is complete.
+
+## Upgrade existing installations
+
+Use the same pinned checkout for all steps. Update this bot's saved profile instructions and all 11 named skills, then verify the saved definitions; do not create duplicate skills or treat reading repository files as installation. Preserve private memories, routines, connections, and the locator. Never apply the public bundle's empty arrays to live private state. Report saved-skill/profile updates separately from local support installation. If the required Grok control is unavailable, identify the remaining manual step instead of claiming success. Inspect any obsolete duplicate skill and its references before retiring it.
+
+For a requested local support upgrade, run `indexx_install.py` with `--refresh-support --check`. The plan distinguishes unmanaged files from modified managed files. `--refresh-support` replaces only files whose current bytes still match their recorded managed hashes; matching release files can be adopted without replacement.
+
+If the catalog/configuration needs migration, run `python3 scripts/indexx_migrate.py --root "$LIBRARY_ROOT"` to preview it. Review the changes and resolve ambiguities, then use the same command with `--apply` within the user's requested upgrade scope. It backs up original config/catalog files locally before changes, preserves the selected catalog location and all IDs/cursors/extra fields, adds `media_path` from verified item metadata, and preserves replaced statuses in `legacy_status`. `active` is not a supported processing status: entries without processing evidence become `discovered`; matched existing artifacts remain `partial` for review. Preserve existing `wiki_ingested` claims for a subsequent audit; never manufacture completion. The migration does not modify media, transcripts, or wiki content and does not make provider calls.
+
+Legacy or invalid STT settings require the user's explicit choice before normalization. Reuse an already explicit choice in this conversation; otherwise perform the provider-choice step below. Pass `--provider grok` or `--provider elevenlabs` to both migration preview and apply only for that choice. Never infer it from a legacy default/fallback, and never use migration to silently switch a valid provider.
+
+Review each support-file conflict against the pinned source. For specific file replacements included in the requested upgrade, use repeatable `--replace-support PATH` arguments on both the installer check and apply commands. Only the eight distributed support files are allowed. The installer backs up their originals under `logs/install-backups/` before replacing them. Preserve genuine local customizations or report unresolved conflicts; do not use broad copy commands or edit manifest hashes to force success. Use the exact reviewed options when applying the plan. A blocked check or install is not a completed upgrade.
+
+On success, the manifest records the installed support revision. Older installers recorded attempted revisions even with conflicts, so inspect actual file hashes and current plan results when adopting an older installation. Report separately: saved bot instructions, installed support revision, catalog/config migration, and completion audit. Leave processing paused while required migration or support conflicts remain.
 
 After repair, audit with `python3 "$LIBRARY_ROOT/scripts/indexx_status.py" --root "$LIBRARY_ROOT"`. Report invalid claimed-complete items as repair work, not a reason to delete them or repeat paid requests. Old artifacts may need the current SCHEMA metadata contract before they can pass validation.
 

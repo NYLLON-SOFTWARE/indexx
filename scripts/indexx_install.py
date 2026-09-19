@@ -7,7 +7,9 @@ User data and customized support files are preserved, including on upgrades.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -16,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 
 
 SOURCE = Path(__file__).resolve().parent.parent
@@ -25,6 +28,13 @@ DIRECTORIES = (
     "catalog", "markdown/instagram", "media/instagram", "wiki/sources/instagram",
     "wiki/entities/creators", "wiki/concepts", "wiki/syntheses", "logs", "scripts",
 )
+SUPPORT_PATHS = SUPPORT + tuple(f"scripts/{name}" for name in RUNTIME_SCRIPTS)
+
+# Load this checkout's parser, not a possibly stale helper in the target library.
+# A file import also supports callers that load this installer with importlib.
+_status_spec = importlib.util.spec_from_file_location("indexx_install_status", SOURCE / "scripts/indexx_status.py")
+_status = importlib.util.module_from_spec(_status_spec)
+_status_spec.loader.exec_module(_status)
 
 
 def digest(data: bytes) -> str:
@@ -60,7 +70,7 @@ def atomic_write(path: Path, data: bytes) -> None:
 
 
 def load_object(path: Path) -> dict:
-    result = json.loads(path.read_text(encoding="utf-8"))
+    result = _status.strict_json(path.read_text(encoding="utf-8"))
     if not isinstance(result, dict):
         raise ValueError(f"Expected a JSON object: {path.name}")
     return result
@@ -121,10 +131,32 @@ def preflight(root: Path) -> list[str]:
     return problems
 
 
-def install(source: Path, root: Path, revision: str, refresh: bool = False) -> dict:
+def catalog_path(root: Path, raw: str) -> str:
+    """Keep catalogs away from configuration, executable support, and other data."""
+    root = root.resolve()
+    if (not isinstance(raw, str) or not raw.strip() or Path(raw).is_absolute()
+            or ".." in Path(raw).parts or Path(raw) == Path(".")):
+        raise ValueError("Configured catalog must be a relative path inside the library")
+    path = Path(raw)
+    resolved = destination(root, raw).resolve().relative_to(root)
+    # macOS commonly uses a case-insensitive filesystem.
+    reserved = tuple(Path(p.casefold()) for p in (*SUPPORT_PATHS, ".indexx.json", "logs", "scripts", "media", "wiki", ".git", ".codex", ".agents"))
+    for candidate in (path, resolved):
+        candidate = Path(str(candidate).casefold())
+        if any(candidate == directory or candidate in directory.parents for directory in map(Path, DIRECTORIES)):
+            raise ValueError(f"Configured catalog collides with a library directory: {raw}")
+        if any(candidate == target or target in candidate.parents or candidate in target.parents for target in reserved):
+            raise ValueError(f"Configured catalog collides with a reserved library path: {raw}")
+    return str(path)
+
+
+def _plan(source: Path, root: Path, revision: str, refresh: bool, replace_support: tuple[str, ...]) -> tuple[dict, dict]:
     source, root = source.resolve(), root.resolve()
     if root == source or source in root.parents or root in source.parents:
         raise ValueError("Choose a library outside the source checkout")
+    for relative in replace_support:
+        if relative not in SUPPORT_PATHS:
+            raise ValueError(f"--replace-support accepts only a support file's exact relative path: {relative}")
     defaults = json.loads(source_bytes(source, "examples/.indexx.example.json"))
     if not isinstance(defaults, dict):
         raise ValueError("Default configuration must be a JSON object")
@@ -142,9 +174,7 @@ def install(source: Path, root: Path, revision: str, refresh: bool = False) -> d
     managed = previous.get("files", {})
     if not isinstance(managed, dict):
         raise ValueError("Invalid installation manifest files map")
-    files = {name: source_bytes(source, name) for name in SUPPORT}
-    for name in RUNTIME_SCRIPTS:
-        files[f"scripts/{name}"] = source_bytes(source, f"scripts/{name}")
+    files = {name: source_bytes(source, name) for name in SUPPORT_PATHS}
     templates = {
         str(path.relative_to(source / "templates")): source_bytes(source, str(path.relative_to(source)))
         for path in sorted((source / "templates/wiki").rglob("*.md"))
@@ -153,9 +183,9 @@ def install(source: Path, root: Path, revision: str, refresh: bool = False) -> d
     selector = paths.get("use_catalog", "legacy")
     if selector not in ("legacy", "catalog"):
         raise ValueError("paths.use_catalog must be legacy or catalog")
-    catalog = paths["instagram_catalog_legacy" if selector == "legacy" else "instagram_catalog"]
-    if not isinstance(catalog, str) or Path(catalog).is_absolute() or ".." in Path(catalog).parts:
-        raise ValueError("Configured catalog must be a relative path inside the library")
+    for key in ("instagram_catalog_legacy", "instagram_catalog"):
+        catalog_path(root, paths[key])
+    catalog = catalog_path(root, paths["instagram_catalog_legacy" if selector == "legacy" else "instagram_catalog"])
     templates[catalog] = source_bytes(source, "examples/saves-index.example.md")
     # Validate every target before creating anything, including symlink ancestors.
     for relative in (*DIRECTORIES, *files, *templates, ".indexx.json", "logs/install.json"):
@@ -169,33 +199,90 @@ def install(source: Path, root: Path, revision: str, refresh: bool = False) -> d
             raise ValueError(f"Expected a directory at {relative}")
         if relative in (*files, *templates, ".indexx.json", "logs/install.json") and target.exists() and not target.is_file():
             raise ValueError(f"Expected a file at {relative}")
-    report = {"source_revision": revision, "created": [], "updated": [], "preserved": [], "conflicts": []}
-    new_managed = dict(managed)
-    for relative in DIRECTORIES:
-        destination(root, relative).mkdir(parents=True, exist_ok=True)
+    report = {
+        "status": "ready", "requested_revision": revision,
+        "planned": {"create": [], "update": [], "replace": [], "adopt": []},
+        "created": [], "updated": [], "replaced": [], "conflicts": [],
+        "conflict_details": [], "migration_required": [], "next_steps": [],
+        "artifact_audit": "not_run",
+    }
+    catalog_target = destination(root, catalog)
+    try:
+        _status.parse_catalog(catalog_target.read_text(encoding="utf-8") if catalog_target.exists() else templates[catalog].decode("utf-8"))
+    except ValueError as exc:
+        report["migration_required"].append(f"{catalog}: {exc}")
+    stt = config["stt"]
+    if stt.get("provider") not in (None, "grok", "elevenlabs") or "primary" in stt or "fallback" in stt:
+        report["migration_required"].append("stt must use provider grok, elevenlabs, or null, without legacy primary/fallback fields; preserve the user's choice during migration")
+    writes, replaced, new_managed = {}, {}, {}
     for relative, content in files.items():
         target = destination(root, relative)
         existing = target.read_bytes() if target.exists() else None
         if existing is None:
-            atomic_write(target, content)
-            report["created"].append(relative)
-            new_managed[relative] = digest(content)
+            report["planned"]["create"].append(relative)
+            writes[relative] = content
         elif existing == content:
-            new_managed[relative] = digest(content)
+            if managed.get(relative) != digest(content):
+                report["planned"]["adopt"].append(relative)
+        elif relative in replace_support:
+            report["planned"]["replace"].append(relative)
+            replaced[relative] = existing
+            writes[relative] = content
         elif refresh and managed.get(relative) == digest(existing):
-            atomic_write(target, content)
-            report["updated"].append(relative)
-            new_managed[relative] = digest(content)
+            report["planned"]["update"].append(relative)
+            writes[relative] = content
         else:
-            report["conflicts" if refresh else "preserved"].append(relative)
+            reason = "unmanaged" if relative not in managed else "modified-managed"
+            if managed.get(relative) == digest(existing):
+                reason = "managed-needs-refresh"
+            report["conflicts"].append(relative)
+            report["conflict_details"].append({"path": relative, "reason": reason})
+        new_managed[relative] = digest(content)
     # Templates become user data once installed; never overwrite them on repair.
     for relative, content in templates.items():
         target = destination(root, relative)
         if not target.exists():
-            atomic_write(target, content)
-            report["created"].append(relative)
-    atomic_write(config_path, (json.dumps(config, indent=2) + "\n").encode())
-    atomic_write(manifest_path, (json.dumps({"source_revision": revision, "files": new_managed}, indent=2) + "\n").encode())
+            writes[relative] = content
+            report["planned"]["create"].append(relative)
+    if report["migration_required"]:
+        report["next_steps"].append("Run python3 scripts/indexx_migrate.py --root <library-root> from this pinned source checkout to review a migration plan, then follow its instructions.")
+    if report["conflicts"]:
+        report["next_steps"].append("Diff each listed file against the pinned source. Use --refresh-support for unchanged managed files; after reviewing an unmanaged or modified file, authorize only that replacement with --replace-support PATH (repeatable). Replacements are backed up locally.")
+    if report["migration_required"] or report["conflicts"]:
+        report["status"] = "blocked"
+    if replaced:
+        backup_parent = destination(root, "logs/install-backups")
+        if backup_parent.exists() and not backup_parent.is_dir():
+            raise ValueError("Expected a directory at logs/install-backups")
+    prepared = {"root": root, "writes": writes, "replaced": replaced, "config": config, "managed": new_managed}
+    return report, prepared
+
+
+def plan(source: Path, root: Path, revision: str, refresh: bool = False, replace_support: tuple[str, ...] = ()) -> dict:
+    """Report compatibility and every support-file conflict without modifying the library."""
+    return _plan(source, root, revision, refresh, replace_support)[0]
+
+
+def install(source: Path, root: Path, revision: str, refresh: bool = False, replace_support: tuple[str, ...] = ()) -> dict:
+    report, prepared = _plan(source, root, revision, refresh, replace_support)
+    if report["status"] == "blocked":
+        return report
+    root = prepared["root"]
+    if prepared["replaced"]:
+        backup = "logs/install-backups/" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ-") + uuid.uuid4().hex
+        # Back up every explicit replacement before replacing any file.
+        for relative, content in prepared["replaced"].items():
+            atomic_write(destination(root, f"{backup}/{relative}"), content)
+        report["backup_path"] = backup
+    for relative in DIRECTORIES:
+        destination(root, relative).mkdir(parents=True, exist_ok=True)
+    for relative, content in prepared["writes"].items():
+        atomic_write(destination(root, relative), content)
+    atomic_write(destination(root, ".indexx.json"), (json.dumps(prepared["config"], indent=2) + "\n").encode())
+    atomic_write(destination(root, "logs/install.json"), (json.dumps({"source_revision": revision, "files": prepared["managed"]}, indent=2) + "\n").encode())
+    report.update(status="installed", source_revision=revision,
+                  created=report["planned"]["create"], updated=report["planned"]["update"], replaced=report["planned"]["replace"])
+    report["next_steps"].append("Support files are installed at the requested revision. Run scripts/indexx_status.py for a separate library artifact audit; this installer has not validated item completion.")
     return report
 
 
@@ -203,25 +290,25 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True, help="User-confirmed absolute library path")
     parser.add_argument("--revision", required=True, help="Reviewed full Git commit ID")
-    parser.add_argument("--check", action="store_true", help="Check local prerequisites and source; do not install")
+    parser.add_argument("--check", action="store_true", help="Plan prerequisites, compatibility, and file changes without installing")
     parser.add_argument("--refresh-support", action="store_true", help="Upgrade previously managed, unmodified support files")
+    parser.add_argument("--replace-support", action="append", default=[], metavar="PATH", help="After reviewing a diff, replace this exact support file and back up its previous contents; repeat for each authorized file")
     args = parser.parse_args()
     try:
         root = Path(args.root).expanduser()
         if not root.is_absolute():
             raise ValueError("--root must be an absolute path chosen by the user")
         revision = source_revision(SOURCE, args.revision)
+        report = plan(SOURCE, root, revision, args.refresh_support, tuple(args.replace_support))
         problems = preflight(root)
         if problems:
-            for problem in problems:
-                print(problem, file=sys.stderr)
+            report.update(status="blocked", prerequisite_errors=problems)
+            print(json.dumps(report, indent=2))
             return 2
-        if args.check:
-            print(f"Ready to install revision {revision} at {root}")
-            return 0
-        report = install(SOURCE, root, revision, args.refresh_support)
+        if not args.check and report["status"] != "blocked":
+            report = install(SOURCE, root, revision, args.refresh_support, tuple(args.replace_support))
         print(json.dumps(report, indent=2))
-        return 1 if report["conflicts"] else 0
+        return 1 if report["status"] == "blocked" else 0
     except (OSError, ValueError, subprocess.CalledProcessError) as exc:
         print(f"Setup stopped: {exc}", file=sys.stderr)
         return 2

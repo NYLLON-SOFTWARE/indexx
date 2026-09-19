@@ -6,6 +6,8 @@
 
 `paths.use_catalog` is `legacy` or `catalog`. The corresponding `instagram_catalog_legacy` or `instagram_catalog` path is authoritative and must resolve inside the library. The validator takes `--root` as the library location; it never guesses another catalog if configuration is absent or broken.
 
+`legacy` selects a file location, not an older parsing format. Both locations follow the table contract below. A selected catalog must not overlap configuration, support files, install logs, media, or wiki artifacts. Use `scripts/indexx_migrate.py` from the pinned source checkout to preview legacy format changes, then `--apply` for a backed-up migration. It preserves IDs, row order, extra columns, and cursor metadata. Replaced statuses are retained in `legacy_status`; unfinished entries can have an empty `media_path`. Existing completion claims are not validated by format conversion and still need a full artifact audit.
+
 The catalog is one Markdown pipe table, with a header and `| --- |` separator. Every row has exactly the header's number of cells; escape literal pipes as `\|`. Required columns: `shortcode`, `url`, `type`, `status`, `media_path`. Recommended columns: `href_kind`, `collected_at`, `updated_at`, `handle`. Optional `platform` defaults to `instagram`. `(platform, shortcode)` is unique. `media_path` identifies the item folder or an existing file within it, relative to the library (absolute paths inside the library also work).
 
 Instagram Saved may have cursor front matter: `newest_shortcode`, `watermark_shortcodes`, `oldest_shortcode`, `count`, `updated`, `last_run_mode`, `last_run_at`, `last_clean_stop`.
