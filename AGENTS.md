@@ -11,6 +11,7 @@ Personal media wiki: Instagram Saved → markdown catalog → local media → tr
 - **Canonical library:** user's computer (`canonical: mac` in `.indexx.json`).
 - **Cloud workspace:** `/workspace/INDEXX` may hold markdown copies only.
 - **Forbidden on cloud:** anything under `media/` (and raw media bytes anywhere on the box).
+- **iCloud:** `~/Documents` / Desktop may sync to Apple iCloud independently of the bot. Use a non-iCloud path if media must stay off Apple’s cloud.
 
 ## Connectors
 

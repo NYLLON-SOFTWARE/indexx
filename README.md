@@ -27,7 +27,7 @@ Have INDEXX confirm each item (it can drive most of this once you approve):
 
 ### On your Mac (bot will ask / check)
 - [ ] Homebrew tools: `brew install ripgrep ffmpeg`
-- [ ] Library root exists (default `~/Documents/INDEXX`) — **media stays here, never in the cloud workspace**
+- [ ] Library root exists (default `~/Documents/INDEXX`) — **never copy `media/` into the Grok Bot `/workspace`**. Note: `~/Documents` may sync via **iCloud**; if you want media only on-disk (not Apple’s cloud), put the library outside iCloud Drive / Desktop & Documents sync (e.g. `~/INDEXX` or an external volume).
 
 ### After setup
 - [ ] Credit OK before first ScrapeCreators enrich/download batch
@@ -42,7 +42,9 @@ Have INDEXX confirm each item (it can drive most of this once you approve):
 | Transcripts beside media | Catalog / wiki markdown sync (optional) |
 | API keys / Instagram session | Never — vault / connect cards only |
 
-**Never store media on `/workspace`.** ScrapeCreators = metadata + durable download URLs only — never transcripts.
+**Never store media on the Grok Bot `/workspace`.** ScrapeCreators = metadata + durable download URLs only — never transcripts.
+
+**iCloud note:** macOS may sync `Desktop` / `Documents` to iCloud. That is separate from the bot workspace. Default `~/Documents/INDEXX` is convenient but can upload your `media/` to Apple if Documents sync is on. Prefer a non-synced path when local-only media matters.
 
 ## Primary transcription
 
