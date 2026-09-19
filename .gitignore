@@ -1,0 +1,57 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets/
+
+# Media (never commit — stays on the user's machine)
+media/
+**/*.mp4
+**/*.mov
+**/*.mkv
+**/*.webm
+**/*.mp3
+**/*.wav
+**/*.m4a
+**/*.aac
+**/*.jpg
+**/*.jpeg
+**/*.png
+**/*.webp
+!**/.gitkeep
+
+# Local library data (user-specific)
+.indexx.json
+!examples/.indexx.example.json
+catalog/**/*.md
+!examples/**
+markdown/instagram/saves-index.md
+wiki/sources/
+wiki/entities/
+wiki/concepts/
+wiki/syntheses/
+wiki/log.md
+logs/
+db/
+*.sqlite
+*.db
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Agent / box scratch
+/workspace/

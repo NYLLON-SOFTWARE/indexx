@@ -1,0 +1,21 @@
+{
+  "root": "~/Documents/INDEXX",
+  "canonical": "mac",
+  "cloud_workspace": "/workspace/INDEXX",
+  "cloud_workspace_forbidden": ["media"],
+  "paths": {
+    "use_catalog": "legacy",
+    "instagram_catalog_legacy": "markdown/instagram/saves-index.md",
+    "instagram_catalog": "catalog/instagram-saves.md"
+  },
+  "batch": {
+    "enrich_n": 20,
+    "download_n": 10,
+    "transcribe_n": 10,
+    "wiki_n": 20
+  },
+  "stt": {
+    "primary": "grok-voice-transcribe-2.0",
+    "fallback": "elevenlabs-scribe"
+  }
+}
