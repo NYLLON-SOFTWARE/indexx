@@ -9,7 +9,7 @@ This repo is the **open-source library + skill sources** (MIT). Day-to-day you r
 1. **Install [Grok Bot](https://grok.x.ai/)** (or open Grok Bot if you already have it).
 2. **Add the INDEXX bot** from the Grok Bot marketplace / shared template (or clone this repo and import the bot profile + skills).
 3. In chat with INDEXX, say: **`install INDEXX`** or **`set up INDEXX`**.
-4. The bot walks the checklist below, creates `~/Documents/INDEXX` (or a path you choose), and wires connectors. You only approve vault secrets and any paid credit estimates.
+4. The bot **asks where to store your library**, suggests `~/Documents/INDEXX` on Mac (you can pick any path), then creates that folder and wires connectors. You only approve the path, vault secrets, and any paid credit estimates.
 
 You should **not** need to hand-copy folders. Manual layout docs live in `AGENTS.md` / `SCHEMA.md` for power users.
 
@@ -23,11 +23,12 @@ Have INDEXX confirm each item (it can drive most of this once you approve):
 - [ ] **ScrapeCreators** custom MCP connected (Instagram metadata + downloads only — **not** transcripts); API key in vault
 - [ ] **ElevenLabs** connected *(optional)* — Scribe fallback STT
 - [ ] Registered Mac / computer linked so the bot can write your library on disk
-- [ ] First-run: ask **`set up INDEXX`** → library root created, `.indexx.json` written, catalog + wiki stubs ready
+- [ ] First-run: ask **`set up INDEXX`** → bot asks for library location → root created, `.indexx.json` written, catalog + wiki stubs ready
 
 ### On your Mac (bot will ask / check)
 - [ ] Homebrew tools: `brew install ripgrep ffmpeg`
-- [ ] Library root exists (default `~/Documents/INDEXX`) — **never copy `media/` into the Grok Bot `/workspace`**. Note: `~/Documents` may sync via **iCloud**; if you want media only on-disk (not Apple’s cloud), put the library outside iCloud Drive / Desktop & Documents sync (e.g. `~/INDEXX` or an external volume).
+- [ ] **Choose library location** — bot asks; on Mac it **suggests** `~/Documents/INDEXX` but you confirm or pick another path
+- [ ] Library root exists at the path you chose — **never copy `media/` into the Grok Bot `/workspace`**. Note: `~/Documents` may sync via **iCloud**; if you want media only on-disk (not Apple’s cloud), pick a path outside iCloud Drive / Desktop & Documents sync (e.g. `~/INDEXX` or an external volume).
 
 ### After setup
 - [ ] Credit OK before first ScrapeCreators enrich/download batch

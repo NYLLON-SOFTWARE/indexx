@@ -33,13 +33,16 @@ Also document connectors + these tools in library `AGENTS.md` and `README.md` wh
 
 ## Steps
 1. Check agent memory / existing `.indexx.json` for a data root. If present and the folder exists, confirm briefly and stop (unless they asked to move it).
-2. If unknown, ask with a widget; default `~/Documents/INDEXX`; allow custom path.
+2. **Always ask where to store the library** (widget). Do not silently create a folder.
+   - On **Mac**, **suggest** `~/Documents/INDEXX` as the default choice, but require an explicit confirm or a custom path.
+   - Mention that `~/Documents` may sync via **iCloud**; if they want media off Apple’s cloud, suggest `~/INDEXX` or another non-synced path / external volume.
+   - On other OSes, suggest a sensible home-directory folder (e.g. `~/INDEXX`) and still require confirm.
 3. On their computer (registered machine Shell), expand `~` and create the tree from AGENTS.md (catalog, markdown/instagram legacy catalog, media, wiki, logs, db/scripts) plus `AGENTS.md`, `SCHEMA.md`, `README.md`, `.indexx.json`, `.gitignore`. If data exists, reuse — never wipe.
 4. Write `.indexx.json` with absolute `root`, `canonical: mac`, `cloud_workspace: /workspace/INDEXX`, `paths.use_catalog: legacy`, legacy + target catalog paths, `cloud_workspace_forbidden: ["media"]`.
 5. Ensure Instagram catalog exists (empty cursor + table) via the saves-index skill conventions.
 6. Check connectors/secrets: `XAI_API_KEY` (required for STT) + ScrapeCreators MCP (required for IG metadata/download). ElevenLabs optional. Keys via connect card / vault — never paste into chat.
 7. Check `rg` and `ffmpeg` on their Mac; if missing, recommend `brew install ripgrep` and/or `brew install ffmpeg` as part of first-run.
-8. Store absolute root in agent profile memory. Tell the user the path; remind them media stays on their Mac.
+8. Store absolute root in agent profile memory. Tell the user the path; remind them media must not go to Grok Bot `/workspace`, and iCloud sync is their choice via path.
 
 ## Rules
-- User computer by default. Never move/delete a root without an explicit ask. No media on `/workspace`.
+- User computer by default. **Ask before choosing the library path**; suggest Mac default, never assume. Never move/delete a root without an explicit ask. No media on `/workspace`.
