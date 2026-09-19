@@ -10,11 +10,18 @@ from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
-from indexx_status import audit
+from indexx_status import audit, parse_catalog, Invalid
 from indexx_dashboard import gather
 
 
 class StatusTests(unittest.TestCase):
+    def test_escaped_final_pipe_cannot_terminate_catalog_row(self):
+        malformed = ("| shortcode | url | type | status | media_path |\n"
+                     "| --- | --- | --- | --- | --- |\n"
+                     "| Example123 | https://www.instagram.com/p/Example123/ | reel | discovered | literal\\|\n")
+        with self.assertRaisesRegex(Invalid, "unescaped pipe"):
+            parse_catalog(malformed)
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)

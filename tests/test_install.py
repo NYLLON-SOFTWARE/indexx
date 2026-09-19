@@ -194,6 +194,58 @@ class InstallerTests(unittest.TestCase):
         self.assertIn("media_path", result["migration_required"][0])
         self.assertEqual(self.snapshot(), before)
 
+    def test_edit_after_planning_is_preserved_without_stale_backup_or_manifest(self):
+        self.run_install()
+        target = self.root / "AGENTS.md"
+        target.write_bytes(b"reviewed original")
+        before_manifest = (self.root / "logs/install.json").read_bytes()
+        original_plan = installer._plan
+        def edit_after_plan(*args):
+            result = original_plan(*args)
+            target.write_bytes(b"new edit during planning")
+            return result
+        with mock.patch.object(installer, "_plan", side_effect=edit_after_plan):
+            with self.assertRaisesRegex(ValueError, "changed during installation: AGENTS.md"):
+                self.run_install(replace_support=("AGENTS.md",))
+        self.assertEqual(target.read_bytes(), b"new edit during planning")
+        self.assertEqual((self.root / "logs/install.json").read_bytes(), before_manifest)
+        self.assertFalse((self.root / "logs/install-backups").exists())
+
+    def test_edit_during_backups_stops_before_replacing_support(self):
+        self.run_install()
+        target = self.root / "AGENTS.md"
+        target.write_bytes(b"reviewed original")
+        before_manifest = (self.root / "logs/install.json").read_bytes()
+        original_write = installer.atomic_write
+        def edit_after_backup(path, data):
+            original_write(path, data)
+            if "install-backups" in path.parts:
+                target.write_bytes(b"new edit during backup")
+        with mock.patch.object(installer, "atomic_write", side_effect=edit_after_backup):
+            with self.assertRaisesRegex(ValueError, "changed during installation: AGENTS.md"):
+                self.run_install(replace_support=("AGENTS.md",))
+        self.assertEqual(target.read_bytes(), b"new edit during backup")
+        self.assertEqual((self.root / "logs/install.json").read_bytes(), before_manifest)
+
+    def test_config_edit_during_support_update_does_not_get_overwritten(self):
+        self.run_install()
+        (self.source / "AGENTS.md").write_bytes(b"new official support")
+        config = self.root / ".indexx.json"
+        new_config = json.loads(config.read_text())
+        new_config["stt"]["provider"] = "elevenlabs"
+        new_content = json.dumps(new_config).encode()
+        before_manifest = (self.root / "logs/install.json").read_bytes()
+        original_write = installer.atomic_write
+        def edit_config(path, data):
+            original_write(path, data)
+            if path == (self.root / "AGENTS.md").resolve():
+                config.write_bytes(new_content)
+        with mock.patch.object(installer, "atomic_write", side_effect=edit_config):
+            with self.assertRaisesRegex(ValueError, "changed during installation: .indexx.json"):
+                self.run_install(refresh=True)
+        self.assertEqual(config.read_bytes(), new_content)
+        self.assertEqual((self.root / "logs/install.json").read_bytes(), before_manifest)
+
     def test_legacy_catalog_and_provider_block_checks_and_installs_without_writes(self):
         self.run_install()
         catalog = self.root / "markdown/instagram/saves-index.md"

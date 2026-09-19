@@ -108,6 +108,8 @@ def parse_catalog(text: str) -> list[dict[str, str]]:
     seen: set[tuple[str, str]] = set()
     separator_seen = False
     for line_no, line in enumerate(lines, 1):
+        if line.strip().startswith("|") and line.strip().endswith(r"\|"):
+            raise Invalid(f"catalog line {line_no}: table rows must end with an unescaped pipe")
         if not line.strip().startswith("|") or not line.strip().endswith("|"):
             if headers is not None and line.strip().startswith("|"):
                 raise Invalid(f"catalog line {line_no}: table rows must end with a pipe")

@@ -189,6 +189,26 @@ class MigrationTests(unittest.TestCase):
                 migration.plan_migration(self.root)
         self.assertFalse((self.root / 'logs').exists())
 
+    def test_escaped_final_pipe_cannot_terminate_a_row_and_never_changes_inputs(self):
+        original = self.write_catalog([('Pending', 'active')])
+        malformed = original.replace('keep \\| this |', 'ends with escaped ' + r'\|')
+        self.assertNotEqual(malformed, original)
+        self.catalog.write_text(malformed)
+        before = self.snapshot()
+        for action in (migration.plan_migration, migration.apply_migration):
+            with self.subTest(action=action.__name__):
+                with self.assertRaisesRegex(ValueError, 'unescaped pipe'):
+                    action(self.root)
+                self.assertEqual(self.snapshot(), before)
+                self.assertFalse((self.root / 'logs').exists())
+
+    def test_literal_final_pipe_with_a_real_terminator_is_preserved(self):
+        original = self.write_catalog([('Pending', 'active')])
+        self.catalog.write_text(original.replace('keep \\| this |', 'literal ' + r'\|' + ' |'))
+        migration.apply_migration(self.root)
+        self.assertEqual(self.rows()[0]['note'], 'literal |')
+        self.assertIn('literal ' + r'\|' + ' |', self.catalog.read_text())
+
     def test_conflicting_legacy_status_is_not_overwritten(self):
         self.write_catalog([('Pending', 'active')], ' | legacy_status', ' | something-else')
         with self.assertRaisesRegex(ValueError, "Conflicting legacy_status"):
@@ -246,6 +266,26 @@ class MigrationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'explicit --provider'):
                     migration.plan_migration(self.root)
                 self.assertEqual(migration.plan_migration(self.root, 'elevenlabs')['provider'], 'elevenlabs')
+
+    def test_valid_provider_automatically_retires_obsolete_defaults_without_switching(self):
+        for chosen in ('grok', 'elevenlabs'):
+            with self.subTest(chosen=chosen):
+                self.config['stt'] = {'provider': chosen, 'primary': 'contradictory-old-default',
+                                      'fallback': 'obsolete-fallback', 'locale': 'en'}
+                self.save_config()
+                original = self.config_path.read_bytes()
+                plan = migration.plan_migration(self.root)
+                self.assertEqual(plan['provider'], chosen)
+                self.assertTrue(plan['provider_config_changed'])
+                self.assertEqual(self.config_path.read_bytes(), original)
+                different = 'elevenlabs' if chosen == 'grok' else 'grok'
+                with self.assertRaisesRegex(ValueError, 'cannot switch'):
+                    migration.apply_migration(self.root, different)
+                self.assertEqual(self.config_path.read_bytes(), original)
+                applied = migration.apply_migration(self.root)
+                self.assertEqual(json.loads(self.config_path.read_text())['stt'], {'provider': chosen, 'locale': 'en'})
+                self.assertEqual(Path(applied['backup_files']['.indexx.json']).read_bytes(), original)
+                self.assertFalse(migration.plan_migration(self.root)['provider_config_changed'])
 
     def test_valid_provider_cannot_be_switched_by_migration(self):
         before = self.snapshot()

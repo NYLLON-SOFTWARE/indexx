@@ -69,8 +69,8 @@ def atomic_write(path: Path, data: bytes) -> None:
             os.unlink(name)
 
 
-def load_object(path: Path) -> dict:
-    result = _status.strict_json(path.read_text(encoding="utf-8"))
+def load_object(path: Path, data: bytes = None) -> dict:
+    result = _status.strict_json(path.read_text(encoding="utf-8") if data is None else data.decode("utf-8"))
     if not isinstance(result, dict):
         raise ValueError(f"Expected a JSON object: {path.name}")
     return result
@@ -161,8 +161,15 @@ def _plan(source: Path, root: Path, revision: str, refresh: bool, replace_suppor
     if not isinstance(defaults, dict):
         raise ValueError("Default configuration must be a JSON object")
     defaults.update(root=str(root), canonical="mac")
+    observed = {}
+    def observe(relative):
+        path = destination(root, relative)
+        value = path.read_bytes() if path.exists() else None
+        observed[relative] = value
+        return value
     config_path = destination(root, ".indexx.json")
-    current = load_object(config_path) if config_path.exists() else {}
+    config_before = observe(".indexx.json")
+    current = load_object(config_path, config_before) if config_before is not None else {}
     if "root" in current:
         if not isinstance(current["root"], str) or not current["root"].strip():
             raise ValueError("Existing config root must be a nonempty path; repair it explicitly")
@@ -170,7 +177,8 @@ def _plan(source: Path, root: Path, revision: str, refresh: bool, replace_suppor
             raise ValueError("Existing config points to another root; request an explicit library relocation")
     config = fill_missing(current, defaults)
     manifest_path = destination(root, "logs/install.json")
-    previous = load_object(manifest_path) if manifest_path.exists() else {}
+    manifest_before = observe("logs/install.json")
+    previous = load_object(manifest_path, manifest_before) if manifest_before is not None else {}
     managed = previous.get("files", {})
     if not isinstance(managed, dict):
         raise ValueError("Invalid installation manifest files map")
@@ -206,9 +214,9 @@ def _plan(source: Path, root: Path, revision: str, refresh: bool, replace_suppor
         "conflict_details": [], "migration_required": [], "next_steps": [],
         "artifact_audit": "not_run",
     }
-    catalog_target = destination(root, catalog)
+    catalog_before = observe(catalog)
     try:
-        _status.parse_catalog(catalog_target.read_text(encoding="utf-8") if catalog_target.exists() else templates[catalog].decode("utf-8"))
+        _status.parse_catalog(catalog_before.decode("utf-8") if catalog_before is not None else templates[catalog].decode("utf-8"))
     except ValueError as exc:
         report["migration_required"].append(f"{catalog}: {exc}")
     stt = config["stt"]
@@ -216,8 +224,7 @@ def _plan(source: Path, root: Path, revision: str, refresh: bool, replace_suppor
         report["migration_required"].append("stt must use provider grok, elevenlabs, or null, without legacy primary/fallback fields; preserve the user's choice during migration")
     writes, replaced, new_managed = {}, {}, {}
     for relative, content in files.items():
-        target = destination(root, relative)
-        existing = target.read_bytes() if target.exists() else None
+        existing = observe(relative)
         if existing is None:
             report["planned"]["create"].append(relative)
             writes[relative] = content
@@ -242,6 +249,7 @@ def _plan(source: Path, root: Path, revision: str, refresh: bool, replace_suppor
     for relative, content in templates.items():
         target = destination(root, relative)
         if not target.exists():
+            observed[relative] = None
             writes[relative] = content
             report["planned"]["create"].append(relative)
     if report["migration_required"]:
@@ -254,8 +262,18 @@ def _plan(source: Path, root: Path, revision: str, refresh: bool, replace_suppor
         backup_parent = destination(root, "logs/install-backups")
         if backup_parent.exists() and not backup_parent.is_dir():
             raise ValueError("Expected a directory at logs/install-backups")
-    prepared = {"root": root, "writes": writes, "replaced": replaced, "config": config, "managed": new_managed}
+    prepared = {"root": root, "writes": writes, "replaced": replaced, "config": config,
+                "managed": new_managed, "observed": observed}
     return report, prepared
+
+
+def require_unchanged(root: Path, observed: dict) -> None:
+    """Stop if any planned input changed; never back up stale planned bytes."""
+    for relative, expected in observed.items():
+        target = destination(root, relative)
+        current = target.read_bytes() if target.exists() else None
+        if current != expected:
+            raise ValueError(f"Library file changed during installation: {relative}; stop other writers and re-plan")
 
 
 def plan(source: Path, root: Path, revision: str, refresh: bool = False, replace_support: tuple[str, ...] = ()) -> dict:
@@ -268,17 +286,27 @@ def install(source: Path, root: Path, revision: str, refresh: bool = False, repl
     if report["status"] == "blocked":
         return report
     root = prepared["root"]
+    observed = prepared["observed"]
+    require_unchanged(root, observed)
     if prepared["replaced"]:
         backup = "logs/install-backups/" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ-") + uuid.uuid4().hex
         # Back up every explicit replacement before replacing any file.
         for relative, content in prepared["replaced"].items():
+            require_unchanged(root, {relative: observed[relative]})
             atomic_write(destination(root, f"{backup}/{relative}"), content)
         report["backup_path"] = backup
+    require_unchanged(root, observed)
     for relative in DIRECTORIES:
         destination(root, relative).mkdir(parents=True, exist_ok=True)
     for relative, content in prepared["writes"].items():
+        require_unchanged(root, {relative: observed[relative]})
         atomic_write(destination(root, relative), content)
-    atomic_write(destination(root, ".indexx.json"), (json.dumps(prepared["config"], indent=2) + "\n").encode())
+        observed[relative] = content
+    require_unchanged(root, observed)
+    config_content = (json.dumps(prepared["config"], indent=2) + "\n").encode()
+    atomic_write(destination(root, ".indexx.json"), config_content)
+    observed[".indexx.json"] = config_content
+    require_unchanged(root, observed)
     atomic_write(destination(root, "logs/install.json"), (json.dumps({"source_revision": revision, "files": prepared["managed"]}, indent=2) + "\n").encode())
     report.update(status="installed", source_revision=revision,
                   created=report["planned"]["create"], updated=report["planned"]["update"], replaced=report["planned"]["replace"])
