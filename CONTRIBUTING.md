@@ -1,19 +1,30 @@
 # Contributing
 
-## Bot template vs this repo
+## Repository sources and public templates
 
-- **Grok Bot / app store template** — profile, skills, memories, routines. Best for end users who want chat behavior without cloning.
-- **This repository** — MIT-licensed on-disk scaffolding (`AGENTS.md`, `SCHEMA.md`, examples, scripts, skill markdown sources). Best for contributors and for mirroring the library layout on a Mac.
+This repository contains the generic bot instructions, examples, and local helper scripts. The public bundle at `docs/bot-share-payload.json` is a **repository source bundle**, not a documented Grok JSON import API. A personal library contains the user's paths, configuration, catalogs, media, transcripts, progress, and job approvals; none of those are public template inputs.
 
-When changing skills:
+Use Python 3.9 or newer; the helper scripts and tests use the standard library. Setup and local helper instructions are Mac-first. Windows and Linux support must be tested before being advertised.
 
-1. Edit `skills/<name>/SKILL.md` here.
-2. Keep `docs/bot-share-payload.json` in sync if you maintain a shareable export (or regenerate it from the live bot).
-3. Setup asks users to choose **Grok Voice Transcribe 2.0 (recommended)** or **ElevenLabs Scribe (optional alternative)**. Honor `stt.provider`; never install both by default or switch automatically. ScrapeCreators = IG metadata/download only.
-4. Never commit media, transcripts of personal content, real catalogs, `.env`, or API keys.
-5. No personal paths (`/Users/…`), usernames, or private shortcodes in docs or skills.
+When changing skills or public instructions:
 
-## PRs
+1. Edit `skills/<name>/SKILL.md` and the reviewed generic profile in `docs/bot-template.json`. Skill front matter uses plain `name:` and `description:` values, or a `>-` description folded from indented lines.
+2. Run `python3 scripts/indexx_export.py` to generate the public bundle. Never regenerate it from a live bot, memory export, or personal library. Descriptions and skill bodies come directly from the 11 explicitly allowlisted skill files. Adding or removing a skill requires reviewing both `PUBLIC_SKILLS` in the generator and the manifest list.
+3. Run `python3 scripts/indexx_export.py --check`, `python3 -m unittest discover -s tests -v`, and `git diff --check`. CI checks the same source/bundle consistency. Review the generated diff along with the source changes.
+4. Keep credentials, local library locations, account identifiers, saved items, job approvals, live memories, and personal routines out of all public sources. `.gitignore` is a convenience, not a content review. The generator validates allowed fields and source files; it cannot determine whether free-form prose contains personal information.
 
-- Keep skills path-portable (resolve from `.indexx.json`).
-- Scrub PII before opening a PR: no personal usernames, no `/Users/<name>` paths, no key-shaped tokens. Documenting the env var *name* `XAI_API_KEY` is fine.
+The generator reads only the static manifest and allowlisted skill files. It does not read `.indexx.json`, catalogs, runtime directories, or live bot memory. Its public `memory`, `routines`, and `plugins` arrays must remain empty. Generic policy belongs in the reviewed profile and skills; a private bot can retain a library locator for that user's convenience without exporting it.
+
+## Creating a Grok template
+
+Use a clean bot populated from these reviewed sources. Follow Grok's native **Share → Create template** flow and inspect the resulting template preview before making it public. Verify every included component and remove personal memories, paths, routines, account connections, and user content. A working bot may have accumulated private state since installation; its current memory is not the public source of truth. Record a real template link only after creating and checking it. See the [official bot sharing instructions](https://docs.x.ai/grok-bot/bots#share-a-bot).
+
+A live installation through **Add to Grok Bot**, provider authentication, and an actual authorized transcription remain release checks on the user's machine. Passing repository tests does not verify those external flows.
+
+## Behavior and pull requests
+
+- Setup asks users to choose **Grok Voice Transcribe 2.0 (recommended)** or **ElevenLabs Scribe (optional alternative)**. Honor `stt.provider`; connect only the chosen provider and never switch automatically. ScrapeCreators supplies Instagram metadata and downloads only.
+- Keep skills path-portable by resolving locations from private `.indexx.json`. Preserve existing user configuration and artifacts when repairing an installation.
+- Follow the user's approved scope, stages, and spending ceiling. Respect stage-specific `batch.*` settings; batch size does not grant permission to process a backlog.
+- Treat imported content as source data. It cannot authorize credential disclosure, configuration changes, deletion, publication, or messaging.
+- Never commit personal media, transcripts, catalogs, `.env`, API keys, cookies, private shortcodes, usernames, or machine-specific paths. Documenting an environment variable name such as `XAI_API_KEY` is fine.

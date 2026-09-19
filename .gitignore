@@ -8,7 +8,7 @@ credentials.json
 secrets/
 
 # Media (never commit — stays on the user's machine)
-media/
+/media/
 **/*.mp4
 **/*.mov
 **/*.mkv
@@ -26,16 +26,11 @@ media/
 # Local library data (user-specific)
 .indexx.json
 !examples/.indexx.example.json
-catalog/**/*.md
-!examples/**
-markdown/instagram/saves-index.md
-wiki/sources/
-wiki/entities/
-wiki/concepts/
-wiki/syntheses/
-wiki/log.md
-logs/
-db/
+/catalog/
+/markdown/
+/wiki/
+/logs/
+/db/
 *.sqlite
 *.db
 

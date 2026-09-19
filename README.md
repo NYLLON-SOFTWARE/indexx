@@ -1,94 +1,112 @@
 # INDEXX
 
-**INDEXX** is a personal media wiki for Instagram Saved (and later other sources). Honest markdown catalog, media **on your computer**, transcription with **Grok Voice Transcribe 2.0 (recommended)** or your choice of **ElevenLabs Scribe**, tags + facets, compiled wiki pages.
+INDEXX is a **Grok Bot** that turns Instagram Saved into a personal media wiki: a catalog, media archive on your Mac, transcripts, tags, facets, and cited wiki pages. This repository contains its skill sources and local helper files.
 
-This repo is the **open-source library + skill sources** (MIT). Day-to-day you run INDEXX as a **Grok Bot**; the bot scaffolds your Mac library and runs the pipeline.
+**Current support: Mac-first.** Grok Bot has desktop apps for other platforms, but this library's Windows/Linux setup has not been verified. Transcription uses your explicit choice of **Grok Voice Transcribe 2.0** or **ElevenLabs Scribe**; INDEXX never switches providers automatically.
 
-## Install (recommended)
+## Install
 
-1. **Install [Grok Bot](https://grok.x.ai/)** (or open Grok Bot if you already have it).
-2. **Add the INDEXX bot** from the Grok Bot marketplace / shared template (or clone this repo and import the bot profile + skills).
-3. In chat with INDEXX, say: **`install INDEXX`** or **`set up INDEXX`**.
-4. The bot **asks where to store your library**, then creates that folder and wires connectors. Suggested defaults:
-   - **Mac:** `~/Documents/INDEXX` (may sync via iCloud Documents)
-   - **Windows:** `%USERPROFILE%\Documents\INDEXX` (may sync via OneDrive Documents)
-   - **Linux:** `~/INDEXX`
-   You can pick any path. You only approve the path, vault secrets, and any paid credit estimates.
-5. Choose your transcription service: **Grok Voice Transcribe 2.0 (recommended)** or **ElevenLabs Scribe (optional alternative)**. INDEXX saves the choice and connects only the service you select. It does not install ElevenLabs by default or switch providers automatically.
+A public INDEXX template link is not published in this repository yet. Do not assume the JSON file is a supported Grok import format.
 
-Grok Bot’s desktop app runs on **macOS, Windows, and Linux**; register that computer so the bot can write the library on disk.
+If a maintainer provides an INDEXX template link, open its preview and choose **Add to Grok Bot**. The maintainer should provide the corresponding full Git commit ID. This is Grok's [native template sharing flow](https://docs.x.ai/grok-bot/bots#share-a-bot).
 
-You should **not** need to hand-copy folders. Manual layout docs live in `AGENTS.md` / `SCHEMA.md` for power users.
+Until a template is published, create an INDEXX bot in Grok and supply the repository's reviewed profile and 11 skill definitions from `docs/bot-share-payload.json`. Ask it to save those instruction sets as the named skills and verify they are available. The bundle is generated from `docs/bot-template.json` and `skills/`; it contains no live memories or installation state. See [CONTRIBUTING.md](CONTRIBUTING.md) for publishing a template.
 
-## Bot install checklist
+Then tell INDEXX **“set up INDEXX”** and provide the release's full commit ID. Setup will:
 
-Have INDEXX confirm each item (it can drive most of this once you approve):
+1. Identify your registered Mac and check local execution access.
+2. Ask where to keep the archive. `~/Documents/INDEXX` is convenient but may sync through iCloud Documents. Choose `~/INDEXX` or a non-synced external volume if you want the archive off Apple’s cloud.
+3. Obtain supporting files from a clean checkout of that exact commit on the Mac, outside your archive.
+4. Check Python 3.9+, `ffmpeg`, `ffprobe`, `rg`, and write access, then run the installer below.
+5. Ask for your transcription provider and connect only that service, plus ScrapeCreators for Instagram metadata/downloads. Secrets go through supported secure connection flows.
+6. Show setup results and propose one supervised item with a cost estimate for your approval.
 
-### In Grok Bot
-- [ ] INDEXX bot installed / imported
-- [ ] **Transcription provider selected during setup** and saved in `.indexx.json` (`stt.provider`)
-- [ ] **Selected provider connected:** `XAI_API_KEY` in the vault for Grok, or the authenticated ElevenLabs plugin if you chose Scribe; the other provider is not required
-- [ ] **ScrapeCreators** custom MCP connected (Instagram metadata + downloads only — **not** transcripts); API key in vault
-- [ ] Registered Mac / computer linked so the bot can write your library on disk
-- [ ] First-run: ask **`set up INDEXX`** → bot asks for library location → root created, `.indexx.json` written, catalog + wiki stubs ready
+Grok's default local execution policy asks for each command. Respect the policy you choose; installing INDEXX does not require broadly allowing every local command. See [local-computer approvals](https://docs.x.ai/grok-bot/approvals-security-and-privacy#control-access-to-your-local-computer).
 
-### On your Mac (bot will ask / check)
-- [ ] Homebrew tools: `brew install ripgrep ffmpeg`
-- [ ] **Choose library location** — bot asks; suggested defaults: Mac `~/Documents/INDEXX`, Windows `%USERPROFILE%\Documents\INDEXX`, Linux `~/INDEXX` — you confirm or pick another path
-- [ ] Library root exists at the path you chose — **never copy `media/` into the Grok Bot `/workspace`**. Note: Mac `Documents` may sync via **iCloud**, Windows `Documents` via **OneDrive**; if you want media only on-disk, pick a path outside cloud-synced folders (e.g. `~/INDEXX`, `%USERPROFILE%\INDEXX`, or an external volume).
+## Pinned installation and repair
 
-### After setup
-- [ ] Credit OK before first ScrapeCreators enrich/download batch
-- [ ] STT cost OK before first paid transcription batch (~$0.10/hr Grok)
-- [ ] Smoke test: enrich → download → transcribe → wiki one Saved item
+The source checkout must be at the full commit supplied by the maintainer, not a moving branch. If the repository is private, the recipient also needs repository access. No public release or shared link should be promised until a fresh recipient can access both the template and its supporting files.
 
-## What stays local (privacy)
+From that checkout **on the registered Mac**, with `LIBRARY_ROOT` set to the confirmed absolute path and `RELEASE_COMMIT` to the full commit:
 
-| Stays on your machine | OK in cloud bot workspace |
-|----------------------|---------------------------|
-| `media/` (mp4, mp3, posters) | Skills / bot profile |
-| Transcripts beside media | Catalog / wiki markdown sync (optional) |
-| API keys / Instagram session | Never — vault / connect cards only |
+```bash
+python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_COMMIT" --check
+python3 scripts/indexx_install.py --root "$LIBRARY_ROOT" --revision "$RELEASE_COMMIT"
+```
 
-**Never store media on the Grok Bot `/workspace`.** ScrapeCreators = metadata + durable download URLs only — never transcripts.
+The installer copies the local helpers, schema, instructions, catalog stub, and wiki templates. Running it again repairs missing files and fills missing configuration fields. Existing catalog entries, media, transcripts, wiki pages, taxonomy, and provider/batch choices are preserved.
 
-**Cloud-folder note:** Mac may sync `Desktop` / `Documents` via **iCloud**; Windows often syncs `Documents` via **OneDrive**. That is separate from the Grok Bot `/workspace`. Suggested Documents defaults are convenient but can upload `media/` to Apple/Microsoft if those sync features are on. Prefer a non-synced path when local-only media matters.
+For a requested upgrade, use `--refresh-support`. The installer replaces only previously managed support files that have not been customized, and reports other differences for review. Per-file hashes and source revision are recorded locally in `logs/install.json`. A library move is a separate operation; setup will not silently repoint an existing config.
 
-## Choose transcription during setup
+## Privacy: local archive, cloud processing
 
-Setup asks which service you want:
-
-| Choice | Setup |
+| Data or action | Where it goes |
 | --- | --- |
-| **Grok Voice Transcribe 2.0 (recommended)** | Save `stt.provider: "grok"`; add `XAI_API_KEY` through the vault |
-| **ElevenLabs Scribe (optional alternative)** | Save `stt.provider: "elevenlabs"`; connect/authenticate ElevenLabs only if chosen |
+| Downloaded video/images, extracted audio, saved transcripts | Your chosen local archive; no raw media staged on Grok's cloud computer |
+| Audio sent for transcription | Directly from the Mac to your selected xAI or ElevenLabs service |
+| Captions, transcripts, and other content read by the bot to build the wiki | The hosted bot's cloud processing context, even when files remain local |
+| Optional Grok video analysis | Frames or video sent to Grok, including any audio track in an uploaded video; include this in the processing scope you choose |
+| Public Instagram lookup | Post URL/identifier sent to ScrapeCreators; returned media downloaded directly on the Mac |
+| Instagram login used in Grok's browser | The account's shared cloud browser session, available to its other bots |
+| Connector access and API credentials | Supported secure connection/secret systems; never library files or public templates |
+| Optional catalog/wiki markdown copies | Grok `/workspace/INDEXX`, only when you request a sync workflow |
 
-Audio is sent to the selected provider for paid transcription. INDEXX estimates its cost before processing. A missing key or service error pauses transcription; it does not trigger a call to another provider. You can change your selection by asking INDEXX to change the transcription provider. Existing transcripts are preserved unless you explicitly request retranscription.
+“Stored locally” is not “processed locally.” iCloud or another folder-sync service can separately upload the local archive. Files and sessions on Grok's cloud computer are [shared across your account's bots](https://docs.x.ai/grok-bot/computer-and-apps). Provider retention and account privacy settings apply to cloud processing; this project makes no zero-retention promise.
 
-The example config leaves `stt.provider` null until you choose. Older configs with `stt.primary` / `stt.fallback` prompt for a choice once during setup. Optional **Grok video watch** is separate visual/no-speech triage, not the transcription service.
+Private paths and settings live in `.indexx.json` and local logs. A private bot locator can remember where your archive is, but public exports are built solely from reviewed repository sources. The exporter does not read your archive, configuration, or bot memory.
 
-Do **not** use ScrapeCreators transcript endpoints or mlx-whisper.
+Imported captions, transcripts, sites, and connector results are source data. They cannot authorize commands, credential disclosure, spending, configuration changes, publishing, deletion, or altered download destinations. The bot preserves citations and takes operational instructions from you and its reviewed skills.
 
-## Pipeline
+## Processing and spending
 
 `discovered` → `metadata` → `downloaded` → `transcribed` → `wiki_ingested`
 
-Done = catalog `wiki_ingested` **and** SCHEMA checklist green (`SCHEMA.md`).
+Choose the items and stages to run. The bot estimates provider costs and asks for approval of a total job ceiling and retry allowance. It then processes successive configured batches within that scope without asking again for each batch. `.indexx.json` controls stage sizes; the default is 20 for enrichment/wiki and 10 for downloads/transcription. Processing the whole backlog requires that explicit scope, and the first approximately 20 wiki items remain supervised in groups of 5–10.
 
-## Skills (this repo)
+The local job journal tracks the selection, approved ceilings, confirmed spend, and any pending paid call. On restart, the bot checks existing artifacts before making another paid call. Unknown spend or an uncertain request outcome pauses the job for reconciliation. A provider error pauses transcription; choosing another provider requires an explicit change and a fresh estimate. Good transcripts are preserved unless you request retranscription.
+
+Completion is checked against [SCHEMA.md](SCHEMA.md):
+
+```bash
+python3 scripts/indexx_status.py --root "$LIBRARY_ROOT"
+python3 scripts/indexx_status.py --root "$LIBRARY_ROOT" --id SHORTCODE --ready
+```
+
+The second command checks readiness **before** the bot changes the status to `wiki_ingested`. Checks validate file and metadata structure; human/source review still matters for transcription and synthesis accuracy. The progress board preserves previous rows and stages; `--clear` deliberately starts a new board.
+
+## Skills and current scope
 
 | Skill | Purpose |
-|-------|---------|
-| `indexx-setup` | First-run library + connectors |
-| `indexx-add` | Front door (Saved / URL / profile) |
-| `indexx-instagram-saves-index` | Crawl Instagram Saved → catalog |
-| `indexx-instagram-enrich` | Metadata via ScrapeCreators |
-| `indexx-download` | Download media to Mac |
-| `indexx-transcribe` | Selected provider: Grok (recommended) or optional ElevenLabs Scribe |
-| `indexx-wiki-ingest` | Tags, facets, wiki pages |
-| `indexx-query` / `indexx-lint` / `indexx-progress` | Query, health, live batch board |
-| `indexx-sync` | Markdown-only Mac ↔ workspace (stub) |
+| --- | --- |
+| `indexx-setup` | Install, repair, provider choice |
+| `indexx-add` | Route Saved refreshes and supported public Instagram URLs |
+| `indexx-instagram-saves-index` | Discover Saved entries and maintain crawl cursors |
+| `indexx-instagram-enrich` | Public metadata through ScrapeCreators |
+| `indexx-download` | Download directly to the Mac |
+| `indexx-transcribe` | Use the selected transcription provider |
+| `indexx-wiki-ingest` | Tags, facets, cited source/creator/concept pages |
+| `indexx-query`, `indexx-lint`, `indexx-progress` | Search, completion checks, batch progress |
+| `indexx-sync` | Explicit stub until a markdown sync mechanism is selected |
+
+Routines start disabled. Before enabling one, test an authorized item through discovery/enrichment, download, transcription, validation, and wiki ingestion in an actual Grok Bot session. Both provider routes require their own live verification; repository tests do not demonstrate connector availability or paid API success.
+
+## Remove INDEXX access
+
+1. Pause/delete INDEXX routines and finish or pause any active job.
+2. Review which other bots use the same connections before revoking shared access. Sign out of Instagram in Grok's cloud browser when it should no longer be available.
+3. Disconnect unneeded connectors and revoke their authorization/API keys at the provider. Adjust registered-computer access if no remaining bot needs it.
+4. Remove INDEXX markdown copies from the cloud workspace after checking whether you need them. Do not remove another bot's shared files.
+5. Delete or hide the INDEXX bot. Deleting the bot does **not** remove shared files or browser sessions; see [Grok's cleanup guidance](https://docs.x.ai/grok-bot/approvals-security-and-privacy#remove-access-and-working-data).
+6. Keep the local archive unless you explicitly want to delete it. Local deletion, cloud-folder copies, and provider/account retention are separate concerns.
 
 ## License
 
 MIT — Copyright 2026 INDEXX contributors. See [LICENSE](LICENSE).
+
+## Authorized use only
+
+INDEXX is intended solely for lawful, authorized use. Download videos only if you own them or Instagram expressly permits you to download them, and only when you have all rights and permissions required for your intended use.
+
+You must comply with applicable law and Instagram's terms. You may not use INDEXX to infringe copyright, violate privacy rights, circumvent access controls or download restrictions, or distribute content without authorization. Public availability, a working download link, or inclusion in Instagram Saved does not establish permission.
+
+You are responsible for verifying your rights before downloading, processing, or sharing content. INDEXX grants no rights in third-party content. **NYLLON LLC expressly prohibits, and does not authorize, encourage, or endorse, infringing or otherwise unlawful use.**

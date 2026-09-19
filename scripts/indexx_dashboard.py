@@ -15,36 +15,20 @@ import html
 import json
 import os
 import re
-import subprocess
 import sys
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
-from zoneinfo import ZoneInfo
 
-PT = ZoneInfo("America/Los_Angeles")
+from indexx_status import Invalid, audit, load_catalog, parse_catalog, strict_json
 
-STATUS_ORDER = [
-    "discovered",
-    "enriched",
-    "downloaded",
-    "transcribed",
-    "wiki_ingested",
-    "failed",
-    "partial",
-    "active",
-    "stuck",
-    "error",
-]
+def now_local() -> datetime:
+    return datetime.now().astimezone()
 
 
-def now_pt() -> datetime:
-    return datetime.now(tz=PT)
-
-
-def iso_pt(dt: Optional[datetime] = None) -> str:
-    d = dt or now_pt()
+def iso_local(dt: Optional[datetime] = None) -> str:
+    d = dt or now_local()
     return d.isoformat(timespec="seconds")
 
 
@@ -53,72 +37,21 @@ def load_indexx_json(root: Path) -> tuple[Optional[dict], Optional[str]]:
     if not path.is_file():
         return None, f".indexx.json not found at {path}"
     try:
-        return json.loads(path.read_text(encoding="utf-8")), None
+        cfg = strict_json(path.read_text(encoding="utf-8"))
+        if not isinstance(cfg, dict):
+            return None, ".indexx.json must be an object"
+        return cfg, None
     except Exception as e:
         return None, f"Failed to parse .indexx.json: {e}"
 
 
 def resolve_catalog_path(root: Path, cfg: Optional[dict]) -> tuple[Optional[Path], Optional[str]]:
-    if cfg:
-        paths = cfg.get("paths") or {}
-        use = (paths.get("use_catalog") or "legacy").lower()
-        key = "instagram_catalog_legacy" if use == "legacy" else "instagram_catalog"
-        raw = paths.get(key) or paths.get("instagram_catalog_legacy") or paths.get("instagram_catalog")
-        if raw:
-            p = Path(os.path.expanduser(str(raw)))
-            if not p.is_absolute():
-                p = root / p
-            if p.is_file():
-                return p, None
-            return None, f"Configured catalog path missing: {p}"
-
-    # Heuristic search under markdown/
-    md = root / "markdown"
-    candidates: list[Path] = []
-    if md.is_dir():
-        for p in md.rglob("*.md"):
-            name = p.name.lower()
-            if any(x in name for x in ("save", "instagram", "catalog", "index")):
-                candidates.append(p)
-        # Also check common fixed names
-        for name in (
-            "instagram-saves.md",
-            "instagram-saves-index.md",
-            "saves.md",
-            "instagram/saves.md",
-            "instagram/saves-index.md",
-        ):
-            p = md / name
-            if p.is_file() and p not in candidates:
-                candidates.append(p)
-
-    catalog_dir = root / "catalog"
-    if catalog_dir.is_dir():
-        for p in catalog_dir.rglob("*.md"):
-            candidates.append(p)
-
-    # Prefer files that look like a table catalog (have shortcode header)
-    scored: list[tuple[int, Path]] = []
-    for p in candidates:
-        try:
-            head = p.read_text(encoding="utf-8", errors="replace")[:8000]
-        except Exception:
-            continue
-        score = 0
-        if "shortcode" in head.lower():
-            score += 5
-        if re.search(r"^---\s*$", head, re.M):
-            score += 2
-        if "watermark" in head.lower():
-            score += 2
-        if "instagram" in p.name.lower() or "save" in p.name.lower():
-            score += 1
-        if score:
-            scored.append((score, p))
-    if scored:
-        scored.sort(key=lambda x: (-x[0], len(str(x[1]))))
-        return scored[0][1], None
-    return None, "No Instagram saves catalog found under markdown/ or catalog/"
+    # The selected configured catalog is authoritative; never guess a different file.
+    try:
+        _, path, _ = load_catalog(root)
+        return path, None
+    except (Invalid, OSError, UnicodeError, TypeError, ValueError, RuntimeError) as exc:
+        return None, str(exc)
 
 
 def parse_yaml_front_matter(text: str) -> dict[str, Any]:
@@ -152,118 +85,25 @@ def parse_yaml_front_matter(text: str) -> dict[str, Any]:
 
 
 def parse_catalog_table(text: str) -> tuple[list[dict[str, str]], Optional[str]]:
-    lines = text.splitlines()
-    header_idx = None
-    headers: list[str] = []
-    for i, line in enumerate(lines):
-        if not line.strip().startswith("|"):
-            continue
-        cols = [c.strip() for c in line.strip().strip("|").split("|")]
-        lower = [c.lower() for c in cols]
-        if "shortcode" in lower:
-            header_idx = i
-            headers = lower
-            break
-    if header_idx is None:
-        return [], "Catalog has no markdown table with a shortcode column"
-
-    rows: list[dict[str, str]] = []
-    for line in lines[header_idx + 1 :]:
-        s = line.strip()
-        if not s.startswith("|"):
-            if rows:
-                break
-            continue
-        # skip separator
-        if re.match(r"^\|\s*[-:]+", s):
-            continue
-        cols = [c.strip() for c in s.strip("|").split("|")]
-        if len(cols) < 2:
-            continue
-        # pad/truncate to headers
-        while len(cols) < len(headers):
-            cols.append("")
-        row = {headers[j]: cols[j] for j in range(len(headers))}
-        if not row.get("shortcode") or row["shortcode"].lower() == "shortcode":
-            continue
-        rows.append(row)
-    return rows, None
+    try:
+        return parse_catalog(text), None
+    except Invalid as exc:
+        return [], str(exc)
 
 
 def run_status_scripts(root: Path) -> dict[str, Any]:
-    result: dict[str, Any] = {
-        "ran": False,
+    """Use the bundled validator directly; never execute scripts found in user data."""
+    result = audit(root)
+    gaps = list(result["errors"])
+    if result["invalid_complete"]:
+        gaps.append(f"{result['invalid_complete']} catalog completion claims fail structural validation")
+    return {
+        "ran": True,
         "commands": [],
-        "stdout": "",
-        "parsed": {},
-        "gap": None,
+        "stdout": json.dumps(result, indent=2),
+        "parsed": result,
+        "gap": "; ".join(gaps) or None,
     }
-    scripts = [
-        ["python3", str(root / "scripts" / "indexx_status.py")],
-        ["bash", str(root / "scripts" / "indexx-status.sh")],
-    ]
-    for cmd in scripts:
-        path = Path(cmd[-1])
-        if not path.is_file():
-            continue
-        try:
-            proc = subprocess.run(
-                cmd,
-                cwd=str(root),
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            out = (proc.stdout or "") + (("\n" + proc.stderr) if proc.stderr else "")
-            result["ran"] = True
-            result["commands"].append({"cmd": cmd, "returncode": proc.returncode})
-            result["stdout"] = out.strip()
-            result["parsed"] = parse_status_output(out)
-            return result
-        except Exception as e:
-            result["gap"] = f"Status script failed ({path.name}): {e}"
-            result["commands"].append({"cmd": cmd, "error": str(e)})
-    if not result["ran"]:
-        result["gap"] = "Neither scripts/indexx_status.py nor scripts/indexx-status.sh found"
-    return result
-
-
-def parse_status_output(text: str) -> dict[str, Any]:
-    """Best-effort parse of status script human/JSON output."""
-    parsed: dict[str, Any] = {}
-    # JSON blob?
-    text_s = text.strip()
-    if text_s.startswith("{") and text_s.endswith("}"):
-        try:
-            return json.loads(text_s)
-        except Exception:
-            pass
-    # key: value lines and checklist-ish
-    for line in text.splitlines():
-        m = re.match(r"^\s*([A-Za-z0-9_ \-/]+)\s*[:=]\s*(.+?)\s*$", line)
-        if not m:
-            continue
-        key = re.sub(r"\s+", "_", m.group(1).strip().lower())
-        val = m.group(2).strip()
-        if re.fullmatch(r"-?\d+", val):
-            parsed[key] = int(val)
-        elif val.lower() in ("true", "false"):
-            parsed[key] = val.lower() == "true"
-        else:
-            parsed[key] = val
-    # status count lines like "wiki_ingested: 12"
-    status_counts: dict[str, int] = {}
-    for st in STATUS_ORDER:
-        m = re.search(rf"\b{re.escape(st)}\b\s*[:=]\s*(\d+)", text, re.I)
-        if m:
-            status_counts[st] = int(m.group(1))
-    if status_counts:
-        parsed["status_counts"] = status_counts
-    # fully processed / checklist green
-    m = re.search(r"(fully[_\s-]?processed|checklist[_\s-]?green)\s*[:=]\s*(\d+)", text, re.I)
-    if m:
-        parsed["fully_processed"] = int(m.group(2))
-    return parsed
 
 
 def count_wiki_sources(root: Path) -> tuple[Optional[int], Optional[str]]:
@@ -410,15 +250,11 @@ def gather(root: Path) -> dict[str, Any]:
     fully = None
     fully_note = None
     sp = status.get("parsed") or {}
-    if isinstance(sp.get("fully_processed"), int):
+    if not sp.get("errors") and isinstance(sp.get("fully_processed"), int):
         fully = sp["fully_processed"]
-        fully_note = "From status script"
-    elif "wiki_ingested" in by_status:
-        fully = by_status["wiki_ingested"]
-        fully_note = "Proxy: catalog status == wiki_ingested (checklist green not separately verified)"
-    elif isinstance(sp.get("status_counts"), dict) and "wiki_ingested" in sp["status_counts"]:
-        fully = sp["status_counts"]["wiki_ingested"]
-        fully_note = "From status script status_counts.wiki_ingested"
+        fully_note = f"Structurally validated; {sp.get('invalid_complete', 0)} invalid completion claims"
+    else:
+        fully_note = "Validation unavailable; see data gaps"
 
     # Failures
     failures = 0
@@ -456,8 +292,8 @@ def gather(root: Path) -> dict[str, Any]:
         total_saved = sp["total"]
 
     data = {
-        "generated_at": iso_pt(),
-        "generated_at_label": now_pt().strftime("%Y-%m-%d %I:%M:%S %p PT"),
+        "generated_at": iso_local(),
+        "generated_at_label": now_local().strftime("%Y-%m-%d %I:%M:%S %p %Z"),
         "library_root": str(root),
         "indexx": {
             "present": cfg is not None,
