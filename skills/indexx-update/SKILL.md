@@ -1,7 +1,7 @@
 ---
 name: indexx-update
 description: >-
-  Use when asked to update INDEXX, pull the latest bot version, or check for updates. Resolves a tested release, refreshes saved bot instructions and local support, and verifies the existing library.
+  Use when asked to update INDEXX, pull the latest bot version, or check for updates. Resolves a tested release, refreshes bot instructions and support, and reports existing-library follow-up work.
 ---
 Update this existing Grok Bot and its registered Mac library when the user says **“Update INDEXX.”** The user does not need to supply a commit or repeat preservation instructions. **“Check for updates” is read-only:** report the release and installed state without installing, migrating, saving bot definitions, or rebuilding the index.
 
@@ -21,7 +21,19 @@ For a bot predating this skill/helper, bootstrap once: obtain the current main S
 
 Identify the registered Mac and resolve its **existing** library from the private locator and `.indexx.json`. Respect local command approvals. If the Mac is unavailable, finish only the read-only release check. Never substitute Grok's cloud filesystem or create a replacement empty archive. Use a clean detached source checkout **outside** the library at the verified SHA; preserve existing checkouts and uncommitted work. Set `SOURCE_ROOT`, `LIBRARY_ROOT`, and `RELEASE_COMMIT` to the verified absolute paths/full SHA. All remaining source reads and commands use that pin even if main advances.
 
-Read this pinned release's update/setup instructions and manifest before applying it. Compare actual support-file hashes and saved definitions; `logs/install.json` alone is not proof that an earlier update finished. For a check-only request, report available installed state and release CI, then stop before the apply/save/verify sections. Do not pause or wait for active library jobs. Pending CI means the candidate is not ready to install. If everything already matches, report up to date without migrating or rewriting artifacts. If local support/configuration already matches but saved bot definitions are missing or stale, skip local apply/migration and repair only those definitions; missing media tools must not prevent that bot-only repair. Report verification limitations separately. If saved definitions already match, skip saving them.
+Read this pinned release's update/setup instructions and manifest before applying it. Compare actual support-file hashes and saved definitions; `logs/install.json` alone is not proof that an earlier update finished. For a check-only request, report available installed state, release CI, and the read-only feature checks below, then stop before apply/save/verification writes. Do not pause or wait for active library jobs; if inputs change, report the feature check as inconclusive. Pending CI means the candidate is not ready to install; never execute its unchecked helpers. If everything already matches, skip installation and definition writes but still run the read-only feature checks: deferred work remains relevant even on the same version. If local support/configuration already matches but saved bot definitions are missing or stale, skip local apply/migration and repair only those definitions; missing media tools must not prevent that bot-only repair. Report verification limitations separately. If saved definitions already match, skip saving them.
+
+## Check existing-library follow-ups
+
+Run the pinned, CI-verified release's cumulative checker against the existing library, including on check-only and already-current requests. Use the source checkout so a bot upgrading from an older version can discover new requirements before installing them:
+
+```bash
+python3 -B "$SOURCE_ROOT/scripts/indexx_upgrade.py" --root "$LIBRARY_ROOT"
+```
+
+It reads current sources and index freshness without writing or rebuilding. Its stable checks describe each capability, why work is needed, affected IDs/counts, and next actions. Keep software installation, artifact validity, and feature readiness separate. Never treat the install revision, a fresh index, or passing artifact counts as proof that existing stories have been reviewed for people. If no verified helper or local access is available, say follow-ups could not be checked; do not infer readiness. An older release without this checker cannot establish current feature readiness.
+
+The existing-story scope is only catalog items already marked `wiki_ingested`. Report the unprocessed backlog separately. A valid `people_reviewed: true` with `people: []` is finished review with no identifiable person; missing or malformed annotations are not. Report unreadable/missing source pages as blocked and include the paths/errors for search warnings. Warnings can remain even when the index is fresh. Do not guess their cause or overwrite creator pages merely because a warning mentions front matter.
 
 ## Plan and apply the local update
 
@@ -56,8 +68,13 @@ Preserve private memories, routines, connections, credentials, and the library l
 python3 "$LIBRARY_ROOT/scripts/indexx_status.py" --root "$LIBRARY_ROOT" --json
 python3 "$LIBRARY_ROOT/scripts/indexx_search.py" build --root "$LIBRARY_ROOT"
 python3 "$LIBRARY_ROOT/scripts/indexx_search.py" status --root "$LIBRARY_ROOT"
+python3 -B "$SOURCE_ROOT/scripts/indexx_upgrade.py" --root "$LIBRARY_ROOT"
 ```
 
 Verify installed support hashes/revision and saved definitions against the same release. Report separately: release SHA/CI, saved profile/skills, local support and backups, any migration/conflicts, artifact audit counts, and search freshness/person-review coverage. If audit fails, report existing versus new failures where known; preserve the evidence and do not repair content or repeat paid requests merely to turn the audit green. Indexing reads existing records only. Unreviewed people metadata is incomplete coverage, not proof a person is absent.
 
-Keep the final user update brief: what version changed, whether all layers finished, and anything requiring attention. Once installed, future requests need only **“Update INDEXX”** or **“Check for INDEXX updates.”**
+Keep the final user update brief, but always distinguish **Software** (updated/current/partial), **Automatic refresh** (search fresh/failed), and **Existing stories** (reviewed/pending/blocked counts, warnings, and the feature they affect). Summarize warning categories with representative paths/errors and provide the full list on request. Derive every count from the checks; do not use total catalog `unreviewed` as the existing-story count. A helper failure means unknown readiness, not zero pending work.
+
+When review is pending, explain that person search can miss older stories and offer **“Refresh existing stories”** (or accept a direct yes to that scoped offer). Route acceptance to `indexx-wiki-ingest`, using the reported completed-story scope and existing evidence. Explain that this involves the bot reviewing local text; it needs no new downloads, transcription, or paid provider requests, but normal Grok usage may apply. Do not perform that content review solely because an update was requested. If deferred, report it again on the next update/check until the source checks pass; do not record a dismissal as completion. Report source warnings needing repair even if people review is already complete. If no follow-ups remain, say so without implying that the deterministic checks prove every wiki claim.
+
+Once installed, future requests need only **“Update INDEXX”**, **“Check for INDEXX updates”**, or **“Refresh existing stories.”**

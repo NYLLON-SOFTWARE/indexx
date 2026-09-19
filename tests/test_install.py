@@ -53,6 +53,7 @@ class InstallerTests(unittest.TestCase):
         self.assertTrue((self.root / "scripts/indexx_search.py").is_file())
         self.assertTrue((self.root / "scripts/indexx_watch.py").is_file())
         self.assertTrue((self.root / "scripts/indexx_update.py").is_file())
+        self.assertTrue((self.root / "scripts/indexx_upgrade.py").is_file())
         self.assertTrue((self.root / "wiki/entities/people").is_dir())
         self.assertTrue((self.root / "wiki/taxonomies/tags.md").is_file())
         self.assertTrue((self.root / "markdown/instagram/saves-index.md").is_file())
@@ -93,6 +94,13 @@ class InstallerTests(unittest.TestCase):
             check=True, capture_output=True, text=True,
         )
         self.assertEqual(json.loads(search.stdout)["total"], 0)
+        before_check = self.snapshot()
+        upgrade = subprocess.run(
+            [sys.executable, str(self.root / "scripts/indexx_upgrade.py"), "--root", str(self.root)],
+            check=True, capture_output=True, text=True,
+        )
+        self.assertEqual(json.loads(upgrade.stdout)["status"], "ready")
+        self.assertEqual(self.snapshot(), before_check)
         subprocess.run(
             [sys.executable, str(self.root / "scripts/indexx_watch.py"), "--root", str(self.root)],
             check=True, capture_output=True, text=True,

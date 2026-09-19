@@ -46,6 +46,10 @@ The `indexx-update` skill finds the current commit on the trusted repository's `
 
 The update refreshes both the saved Grok profile/skills and local support files, previews any required catalog/config migration, and backs up reviewed replacements. It preserves your archive, provider selection, settings, memories, routines, and connections. It finishes with an artifact audit and a fresh local search index. Pending or failed CI, real customizations, and incomplete steps are reported rather than hidden. Updates do not download videos, retranscribe, run paid calls, annotate the backlog, or publish templates.
 
+Every update or update check also explains which features need work on your **existing stories**. Software can be current while older stories still need person review or wiki-format repairs. The bot reports affected counts and warning details separately from the unprocessed backlog, then offers **“Refresh existing stories.”** That follow-up reviews retained text and updates cited wiki pages in batches; it does not download or retranscribe, and makes no paid provider requests (normal bot usage may apply). You can defer it: unfinished checks appear again on subsequent updates/checks, including when you already have the latest version.
+
+For example, an update might report: “Software updated; search rebuilt. 7 of your 20 completed stories still need person review for speaker search. Say ‘Refresh existing stories’ to review them. Your 200 unprocessed saves are outside this refresh.” These are illustrative counts; the bot checks your actual library. A fresh search index does not resolve malformed-page warnings or establish who appears in older videos.
+
 **One-time bootstrap for older bots, including those configured for the former personal repository:** tell your existing bot:
 
 > From https://github.com/NYLLON-SOFTWARE/indexx, verify the current main commit has passing repository CI, then read `skills/indexx-update/SKILL.md` at that exact commit and follow it to update this existing bot and library. Save the update skill too, so future requests need only “Update INDEXX.”
@@ -53,6 +57,8 @@ The update refreshes both the saved Grok profile/skills and local support files,
 The skill handles release discovery, the pinned source checkout, backups, migration, and verification. A GitHub merge alone does not refresh a running bot or its saved skills. A bot unable to edit saved definitions must report that remaining manual step.
 
 For maintainers, the detailed procedure is in [the update skill](skills/indexx-update/SKILL.md). The read-only release resolver is `scripts/indexx_update.py`; it requires authenticated GitHub CLI (`gh`) access and is installed with the library support scripts. It does not modify the library or update Grok by itself. `logs/install.json` tracks local support installation; it is not proof of saved-skill updates or artifact validity.
+
+The installed `python3 -B "$LIBRARY_ROOT/scripts/indexx_upgrade.py" --root "$LIBRARY_ROOT"` prints the cumulative local follow-up checklist as JSON. It checks current source metadata and search freshness without writing files, making network calls, or treating a newer install revision as completed content work. During an upgrade the bot uses the same helper from the verified release checkout so new checks also reach older installations.
 
 ### Search upgrade without reprocessing
 
