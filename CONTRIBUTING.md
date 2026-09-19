@@ -9,7 +9,7 @@ When changing skills:
 
 1. Edit `skills/<name>/SKILL.md` here.
 2. Keep `docs/bot-share-payload.json` in sync if you maintain a shareable export (or regenerate it from the live bot).
-3. Prefer **Grok Voice Transcribe 2.0** as primary STT; ElevenLabs optional; ScrapeCreators = IG metadata/download only.
+3. Setup asks users to choose **Grok Voice Transcribe 2.0 (recommended)** or **ElevenLabs Scribe (optional alternative)**. Honor `stt.provider`; never install both by default or switch automatically. ScrapeCreators = IG metadata/download only.
 4. Never commit media, transcripts of personal content, real catalogs, `.env`, or API keys.
 5. No personal paths (`/Users/…`), usernames, or private shortcodes in docs or skills.
 

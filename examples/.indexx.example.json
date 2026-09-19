@@ -15,7 +15,6 @@
     "wiki_n": 20
   },
   "stt": {
-    "primary": "grok-voice-transcribe-2.0",
-    "fallback": "elevenlabs-scribe"
+    "provider": null
   }
 }

@@ -1,5 +1,9 @@
 # INDEXX schema (library template)
 
+## Transcription configuration
+
+`.indexx.json` stores `stt.provider`: `grok` or `elevenlabs`, chosen explicitly during setup. The example starts at `null` (not selected); transcription waits for a choice. Grok Voice Transcribe 2.0 is recommended; ElevenLabs Scribe is an optional alternative. Provider credentials stay in the secure vault/connection, not this file. There is no automatic fallback. Legacy `stt.primary` / `stt.fallback` fields are replaced by an explicit provider choice during setup.
+
 ## Catalog
 
 Markdown table (plus YAML cursor front matter for Instagram Saved).
@@ -31,6 +35,8 @@ audio: audio.mp3
 source: grok_stt
 model: grok-voice-transcribe-2.0
 ```
+
+This example is for Grok. For ElevenLabs, use `source: elevenlabs_scribe` and the actual Scribe model used. Normalize either provider's word timestamps to `text`, `start`, `end` (seconds), and optional `speaker`.
 
 ## Done checklist (`wiki_ingested`)
 
