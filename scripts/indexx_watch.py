@@ -106,15 +106,71 @@ def coverage_text(coverage: dict) -> str:
     return text
 
 
-def atomic_write(path: Path, text: str) -> None:
+def stage_file(path: Path, data: bytes) -> Path:
     fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as stream:
-            stream.write(text)
-        os.replace(temporary, path)
-    finally:
+        with os.fdopen(fd, "wb") as stream:
+            stream.write(data)
+        return Path(temporary)
+    except BaseException:
         if os.path.exists(temporary):
             os.unlink(temporary)
+        raise
+
+
+def publish_pair(root: Path, name: str, documents: dict[Path, bytes], originals: dict[Path, bytes | None]) -> None:
+    """Stage both formats and restore prior bytes on a failed publication.
+
+    Two file replacements are not an atomic transaction across a process crash.
+    Already-staged rollback copies handle ordinary write/replacement failures.
+    """
+    def unchanged(path: Path, expected: bytes | None) -> None:
+        output_path(root, name, path.suffix)
+        current = path.read_bytes() if path.exists() else None
+        if current != expected:
+            raise ValueError(f"Watchlist destination changed; regenerate after other writers stop: {path}")
+
+    staged, backups, published, retained = {}, {}, [], set()
+    try:
+        for path in documents:
+            unchanged(path, originals[path])
+        next(iter(documents)).parent.mkdir(parents=True, exist_ok=True)
+        for path, data in documents.items():
+            staged[path] = stage_file(path, data)
+        for path, data in originals.items():
+            if data is not None:
+                backups[path] = stage_file(path.with_name(path.name + ".rollback"), data)
+        # Recheck the complete pair after staging, before exposing either version.
+        for path in documents:
+            unchanged(path, originals[path])
+        try:
+            for path in documents:
+                unchanged(path, originals[path])
+                os.replace(staged[path], path)
+                published.append(path)
+        except BaseException as exc:
+            rollback_errors = []
+            for path in reversed(published):
+                try:
+                    # Preserve a concurrent edit rather than replacing it during recovery.
+                    unchanged(path, documents[path])
+                    if originals[path] is None:
+                        path.unlink()
+                    else:
+                        os.replace(backups[path], path)
+                except (OSError, ValueError) as recovery_error:
+                    rollback_errors.append(f"{path}: {recovery_error}")
+                    if path in backups:
+                        retained.add(backups[path])
+            if rollback_errors:
+                recovery = "; ".join(str(path) for path in retained) or "no previous files existed"
+                raise OSError("Watchlist update and rollback failed. Original copies retained at " + recovery
+                              + ". Recovery errors: " + "; ".join(rollback_errors)) from exc
+            raise
+    finally:
+        for temporary in (*staged.values(), *backups.values()):
+            if temporary not in retained and temporary.exists():
+                temporary.unlink()
 
 
 def render_watchlist(root: Path, report: dict, name: str = "watchlist", title: str = "INDEXX watchlist") -> dict:
@@ -129,6 +185,7 @@ def render_watchlist(root: Path, report: dict, name: str = "watchlist", title: s
     if report.get("total", len(results)) != len(results):
         raise ValueError("Watchlists require all search results; request search with limit=None")
     html_path, md_path = output_path(root, name, ".html"), output_path(root, name, ".md")
+    originals = {path: path.read_bytes() if path.exists() else None for path in (html_path, md_path)}
     output = html_path.parent
     coverage = report.get("coverage") if isinstance(report.get("coverage"), dict) else {}
     coverage_summary = coverage_text(coverage)
@@ -207,9 +264,7 @@ def render_watchlist(root: Path, report: dict, name: str = "watchlist", title: s
     )
     markdown_document = MARKER + "\n# " + markdown_text(title) + "\n\n" + markdown_text(summary) + "\n\n" + markdown_text(coverage_summary) + "\n\n" + markdown_text(snapshot) + warning_md + "\n\n" + ("\n\n".join(entries) if entries else "No matching clips.") + "\n"
     # Validate all inputs and both existing destinations before any output writes.
-    output.mkdir(parents=True, exist_ok=True)
-    atomic_write(html_path, html_document)
-    atomic_write(md_path, markdown_document)
+    publish_pair(root, name, {html_path: html_document.encode("utf-8"), md_path: markdown_document.encode("utf-8")}, originals)
     return {"html_path": str(html_path), "markdown_path": str(md_path), "count": len(results), "playable": playable, "coverage": coverage}
 
 

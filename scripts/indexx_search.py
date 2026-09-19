@@ -22,7 +22,7 @@ from typing import Optional
 import indexx_status as status
 
 CACHE = "db/search.sqlite3"
-VERSION = 3
+VERSION = 4
 APPLICATION_ID = 0x49445858
 ROLES = {"speaker", "featured", "mentioned"}
 
@@ -200,9 +200,10 @@ def _snapshot(root: Path) -> tuple[Inputs, list[dict], list[dict], dict, dict]:
                 "type": "video" if row["type"] == "reel" else row["type"], "catalog_type": row["type"],
                 "status": row["status"], "media_path": None,
                 "video_path": None, "source_path": None, "people": [], "body": ""}
-        # Search-only terms must not leak into the narrative excerpt.
-        indexed_extra = list(row.values())
-        text_parts = [row.get(field, "") for field in ("caption", "description", "notes", "note")]
+        # Index content fields explicitly: URLs, status, paths and other operational
+        # columns are not prose and otherwise make boilerplate match every clip.
+        indexed_extra = [row.get("title", "")]
+        text_parts = [row.get(field, "") for field in ("caption", "caption_snippet", "description", "notes", "note")]
         if status.instagram_id(row["url"]) != item_id:
             inputs.warn(item_id, "Catalog URL does not match item identity")
             item["url"] = None

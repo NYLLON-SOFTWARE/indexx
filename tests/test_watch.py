@@ -101,6 +101,69 @@ class WatchlistTests(unittest.TestCase):
         self.assertTrue(Path(second["markdown_path"]).read_text().startswith(watch.MARKER + "\n"))
         self.assertEqual(self.source.read_text(), "# Existing wiki source\n")
 
+    def test_second_staging_write_failure_preserves_published_pair(self):
+        result = self.render(title="Previous snapshot")
+        before = self.snapshot()
+        original_stage = watch.stage_file
+        def fail_markdown_write(path, data):
+            if path == Path(result["markdown_path"]):
+                raise OSError("Injected Markdown staging failure")
+            return original_stage(path, data)
+        with mock.patch.object(watch, "stage_file", side_effect=fail_markdown_write):
+            with self.assertRaisesRegex(OSError, "Markdown staging failure"):
+                self.render(title="New snapshot")
+        self.assertEqual(self.snapshot(), before)
+
+    def test_second_replacement_failure_restores_previous_pair_or_absence(self):
+        for existing in (False, True):
+            with self.subTest(existing=existing):
+                if existing:
+                    self.render(title="Previous snapshot")
+                before = self.snapshot()
+                original_replace = watch.os.replace
+                def fail_markdown_replace(source, target):
+                    if Path(target).name == "watchlist.md":
+                        raise OSError("Injected Markdown replacement failure")
+                    return original_replace(source, target)
+                with mock.patch.object(watch.os, "replace", side_effect=fail_markdown_replace):
+                    with self.assertRaisesRegex(OSError, "Markdown replacement failure"):
+                        self.render(title="New snapshot")
+                self.assertEqual(self.snapshot(), before)
+
+    def test_edit_during_staging_is_preserved_and_stops_both_publications(self):
+        result = self.render(title="Previous snapshot")
+        html_path, md_path = Path(result["html_path"]), Path(result["markdown_path"])
+        previous_html = html_path.read_bytes()
+        original_stage = watch.stage_file
+        def edit_markdown_after_staging(path, data):
+            temporary = original_stage(path, data)
+            if path == md_path:
+                md_path.write_text("# My curated edit during generation\n")
+            return temporary
+        with mock.patch.object(watch, "stage_file", side_effect=edit_markdown_after_staging):
+            with self.assertRaisesRegex(ValueError, "Refusing to overwrite|destination changed"):
+                self.render(title="New snapshot")
+        self.assertEqual(html_path.read_bytes(), previous_html)
+        self.assertEqual(md_path.read_text(), "# My curated edit during generation\n")
+        self.assertEqual({path.name for path in html_path.parent.iterdir()}, {"watchlist.html", "watchlist.md"})
+
+    def test_recovery_failure_retains_original_copy_and_reports_its_location(self):
+        result = self.render(title="Previous snapshot")
+        html_path = Path(result["html_path"])
+        previous_html = html_path.read_bytes()
+        original_replace = watch.os.replace
+        def fail_markdown_and_rollback(source, target):
+            if Path(target).name == "watchlist.md" or ".rollback." in Path(source).name:
+                raise OSError("Injected replacement failure")
+            return original_replace(source, target)
+        with mock.patch.object(watch.os, "replace", side_effect=fail_markdown_and_rollback):
+            with self.assertRaisesRegex(OSError, "Original copies retained at") as error:
+                self.render(title="New snapshot")
+        originals = list(html_path.parent.glob(".watchlist.html.rollback.*"))
+        self.assertEqual(len(originals), 1)
+        self.assertEqual(originals[0].read_bytes(), previous_html)
+        self.assertIn(str(originals[0]), str(error.exception))
+
     def test_curated_destination_blocks_both_outputs(self):
         result = self.render()
         Path(result["markdown_path"]).write_text("# A curated note\n")

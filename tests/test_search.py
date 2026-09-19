@@ -100,6 +100,38 @@ class SearchTests(unittest.TestCase):
         self.assertEqual(report['coverage'], result['coverage'])
         self.assertEqual(self.ids(searcher.search(self.root, media_type='image')), ['Backlog'])
 
+    def test_catalog_operational_columns_do_not_pollute_content_search(self):
+        catalog = self.root / 'catalog/saves.md'
+        lines = catalog.read_text().splitlines()
+        lines[0] += ' internal_token |'
+        lines[1] += ' --- |'
+        for index in range(2, len(lines)):
+            lines[index] += ' operationalnonce |'
+        catalog.write_text('\n'.join(lines) + '\n')
+        self.build()
+        for query in ('https', 'instagram', 'reel', 'wiki_ingested', '2026-09-19', 'operationalnonce'):
+            with self.subTest(query=query):
+                self.assertEqual(searcher.search(self.root, query)['total'], 0)
+        # Operational data remains available through its dedicated exact filters.
+        self.assertEqual(self.ids(searcher.search(self.root, uploader='@archive_uploader')), ['Featured', 'Speaking'])
+        self.assertEqual(searcher.search(self.root, media_type='video')['total'], 4)
+
+    def test_explicit_catalog_content_fields_are_searchable_before_processing(self):
+        catalog = self.root / 'catalog/saves.md'
+        lines = catalog.read_text().splitlines()
+        fields = ('title', 'caption', 'caption_snippet', 'description', 'notes', 'note')
+        words = ('catalogtitle', 'catalogcaption', 'catalogsnippet', 'catalogdescription', 'catalognotes', 'catalognote')
+        lines[0] += ' ' + ' | '.join(fields) + ' |'
+        lines[1] += ' ' + ' | '.join('---' for _ in fields) + ' |'
+        for index in range(2, len(lines)):
+            values = words if '| Backlog |' in lines[index] else ('',) * len(fields)
+            lines[index] += ' ' + ' | '.join(values) + ' |'
+        catalog.write_text('\n'.join(lines) + '\n')
+        self.build()
+        for word in words:
+            with self.subTest(word=word):
+                self.assertEqual(self.ids(searcher.search(self.root, word)), ['Backlog'])
+
     def test_caption_transcript_source_and_wiki_pages_are_full_text_searchable(self):
         self.write('wiki/concepts/attention.md', '# Attention\n\nA concept about attention and practice.')
         self.write('wiki/syntheses/awareness.md', '# Awareness\n\nA synthesis of attention practice.')
