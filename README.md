@@ -4,10 +4,6 @@ INDEXX is a **Grok Bot** that turns Instagram Saved into a personal media wiki: 
 
 **Current support: Mac-first.** Grok Bot has desktop apps for other platforms, but this library's Windows/Linux setup has not been verified. Transcription uses your explicit choice of **Grok Voice Transcribe 2.0** or **ElevenLabs Scribe**; INDEXX never switches providers automatically.
 
-## Permitted use
-
-Only download videos you own or that Instagram expressly permits you to download. Respect Instagram's terms and the rights of creators. **NYLLON LLC does not endorse or encourage using INDEXX to download copyrighted material without authorization.**
-
 ## Install
 
 A public INDEXX template link is not published in this repository yet. Do not assume the JSON file is a supported Grok import format.
@@ -106,3 +102,11 @@ Routines start disabled. Before enabling one, test an authorized item through di
 ## License
 
 MIT — Copyright 2026 INDEXX contributors. See [LICENSE](LICENSE).
+
+## Authorized use only
+
+INDEXX is intended solely for lawful, authorized use. Download videos only if you own them or Instagram expressly permits you to download them, and only when you have all rights and permissions required for your intended use.
+
+You must comply with applicable law and Instagram's terms. You may not use INDEXX to infringe copyright, violate privacy rights, circumvent access controls or download restrictions, or distribute content without authorization. Public availability, a working download link, or inclusion in Instagram Saved does not establish permission.
+
+You are responsible for verifying your rights before downloading, processing, or sharing content. INDEXX grants no rights in third-party content. **NYLLON LLC expressly prohibits, and does not authorize, encourage, or endorse, infringing or otherwise unlawful use.**
