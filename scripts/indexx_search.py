@@ -22,7 +22,7 @@ from typing import Optional
 import indexx_status as status
 
 CACHE = "db/search.sqlite3"
-VERSION = 5
+VERSION = 6
 APPLICATION_ID = 0x49445858
 ROLES = {"speaker", "featured", "mentioned"}
 
@@ -199,7 +199,8 @@ def _snapshot(root: Path) -> tuple[Inputs, list[dict], list[dict], dict, dict]:
                 "url": row["url"], "handle": row.get("handle", "").lstrip("@"),
                 "type": "video" if row["type"] == "reel" else row["type"], "catalog_type": row["type"],
                 "status": row["status"], "media_path": None,
-                "video_path": None, "source_path": None, "people": [], "body": ""}
+                "video_path": None, "source_path": None, "people": [],
+                "people_reviewed": False, "body": ""}
         # Index content fields explicitly: URLs, status, paths and other operational
         # columns are not prose and otherwise make boilerplate match every clip.
         indexed_extra = [row.get("title", "")]
@@ -285,6 +286,7 @@ def _snapshot(root: Path) -> tuple[Inputs, list[dict], list[dict], dict, dict]:
                     if canonical is not None:
                         indexed_extra.extend([annotation["id"], canonical["name"], *canonical.get("aliases", [])])
                 if front.get("people_reviewed") is True:
+                    item["people_reviewed"] = True
                     reviewed_count += 1
             except (OSError, ValueError) as exc:
                 inputs.warn(source_relative, exc)
