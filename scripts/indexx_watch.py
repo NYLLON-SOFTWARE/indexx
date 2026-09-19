@@ -28,7 +28,8 @@ h1 { margin-bottom: .4rem; } h2 { font-size: 1.2rem; margin: 0 0 .6rem; }
 .summary, .meta { opacity: .8; } .gallery { display: grid; gap: 1.5rem;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
 article { border: 1px solid #8887; border-radius: 12px; padding: 1rem; overflow-wrap: anywhere; }
-video { display: block; width: 100%; max-height: 480px; background: #111; border-radius: 6px; }
+video { display: block; width: auto; height: auto; max-width: 100%; max-height: 480px;
+  margin-inline: auto; background: #111; border-radius: 6px; }
 .unavailable { padding: 2rem 1rem; border: 1px dashed #888; text-align: center; }
 .links { display: flex; flex-wrap: wrap; gap: 1rem; } a { color: inherit; }
 """
@@ -225,7 +226,7 @@ def render_watchlist(root: Path, report: dict, name: str = "watchlist", title: s
             poster_attribute = ''
             if poster.is_file() and poster.stat().st_size > 0:
                 poster_attribute = f' poster="{html.escape(relative_url(poster, output), quote=True)}"'
-            player = f'<video controls preload="none" src="{html.escape(href, quote=True)}"{poster_attribute}><a href="{html.escape(href, quote=True)}">Open local video</a></video>'
+            player = f'<video controls preload="metadata" src="{html.escape(href, quote=True)}"{poster_attribute}><a href="{html.escape(href, quote=True)}">Open local video</a></video>'
             vault_path = video.relative_to(root).as_posix()
             if re.fullmatch(r"[A-Za-z0-9_./ -]+", vault_path):
                 markdown_video = f"![[{vault_path}]]"

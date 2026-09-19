@@ -74,7 +74,7 @@ class WatchlistTests(unittest.TestCase):
         self.assertEqual(len(videos), 1)
         self.assertIn("controls", videos[0])
         self.assertNotIn("autoplay", videos[0])
-        self.assertEqual(videos[0]["preload"], "none")
+        self.assertEqual(videos[0]["preload"], "metadata")
         self.assertEqual(videos[0]["src"], "../../media/instagram/example/2026-09-19_Clip1/media.mp4")
         self.assertEqual(sum(tag == "article" for tag, _ in elements), 2)
         self.assertIn("![[media/instagram/example/2026-09-19_Clip1/media.mp4]]", markdown)
