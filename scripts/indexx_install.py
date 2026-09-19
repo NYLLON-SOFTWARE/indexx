@@ -23,10 +23,12 @@ import uuid
 
 SOURCE = Path(__file__).resolve().parent.parent
 SUPPORT = ("AGENTS.md", "SCHEMA.md", "README.md", ".gitignore")
-RUNTIME_SCRIPTS = ("indexx_status.py", "indexx-status.sh", "indexx_progress.py", "indexx_dashboard.py")
+RUNTIME_SCRIPTS = ("indexx_status.py", "indexx-status.sh", "indexx_progress.py", "indexx_dashboard.py",
+                   "indexx_search.py", "indexx_watch.py")
 DIRECTORIES = (
     "catalog", "markdown/instagram", "media/instagram", "wiki/sources/instagram",
-    "wiki/entities/creators", "wiki/concepts", "wiki/syntheses", "logs", "scripts",
+    "wiki/entities/creators", "wiki/entities/people", "wiki/concepts", "wiki/syntheses",
+    "wiki/views", "db", "logs", "scripts",
 )
 SUPPORT_PATHS = SUPPORT + tuple(f"scripts/{name}" for name in RUNTIME_SCRIPTS)
 
@@ -140,7 +142,7 @@ def catalog_path(root: Path, raw: str) -> str:
     path = Path(raw)
     resolved = destination(root, raw).resolve().relative_to(root)
     # macOS commonly uses a case-insensitive filesystem.
-    reserved = tuple(Path(p.casefold()) for p in (*SUPPORT_PATHS, ".indexx.json", "logs", "scripts", "media", "wiki", ".git", ".codex", ".agents"))
+    reserved = tuple(Path(p.casefold()) for p in (*SUPPORT_PATHS, ".indexx.json", "db", "logs", "scripts", "media", "wiki", ".git", ".codex", ".agents"))
     for candidate in (path, resolved):
         candidate = Path(str(candidate).casefold())
         if any(candidate == directory or candidate in directory.parents for directory in map(Path, DIRECTORIES)):

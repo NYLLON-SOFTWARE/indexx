@@ -38,11 +38,26 @@ If the catalog/configuration needs migration, run `python3 scripts/indexx_migrat
 
 Legacy or invalid STT settings require the user's explicit choice before normalization. Reuse an already explicit choice in this conversation; otherwise perform the provider-choice step below. Pass `--provider grok` or `--provider elevenlabs` to both migration preview and apply only for that choice. Never infer it from a legacy default/fallback, and never use migration to silently switch a valid provider.
 
-Review each support-file conflict against the pinned source. For specific file replacements included in the requested upgrade, use repeatable `--replace-support PATH` arguments on both the installer check and apply commands. Only the eight distributed support files are allowed. The installer backs up their originals under `logs/install-backups/` before replacing them. Preserve genuine local customizations or report unresolved conflicts; do not use broad copy commands or edit manifest hashes to force success. Use the exact reviewed options when applying the plan. A blocked check or install is not a completed upgrade.
+Review each support-file conflict against the pinned source. For specific file replacements included in the requested upgrade, use repeatable `--replace-support PATH` arguments on both the installer check and apply commands. Only the installer's allowlisted distribution support files are allowed. The installer backs up their originals under `logs/install-backups/` before replacing them. Preserve genuine local customizations or report unresolved conflicts; do not use broad copy commands or edit manifest hashes to force success. Use the exact reviewed options when applying the plan. A blocked check or install is not a completed upgrade.
 
 On success, the manifest records the installed support revision. Older installers recorded attempted revisions even with conflicts, so inspect actual file hashes and current plan results when adopting an older installation. Report separately: saved bot instructions, installed support revision, catalog/config migration, and completion audit. Leave processing paused while required migration or support conflicts remain.
 
 After repair, audit with `python3 "$LIBRARY_ROOT/scripts/indexx_status.py" --root "$LIBRARY_ROOT"`. Report invalid claimed-complete items as repair work, not a reason to delete them or repeat paid requests. Old artifacts may need the current SCHEMA metadata contract before they can pass validation.
+
+## Search and people upgrade
+
+Verify that the installed support includes `scripts/indexx_search.py` and `scripts/indexx_watch.py`. Build the derived local index and inspect its coverage:
+
+```bash
+python3 "$LIBRARY_ROOT/scripts/indexx_search.py" build --root "$LIBRARY_ROOT"
+python3 "$LIBRARY_ROOT/scripts/indexx_search.py" status --root "$LIBRARY_ROOT"
+```
+
+Search uses SQLite FTS5 through Python and stores only a rebuildable database at `db/search.sqlite3` on the Mac. Report an unavailable FTS5 runtime or failed build rather than claiming search is ready. No model, embedding service, QMD installation, or provider call is needed. Queries reject stale data; rebuild after library changes. The index can read all existing library records without initiating new processing.
+
+The optional people/source metadata in SCHEMA.md is backward compatible. Existing sources without `people` or `people_reviewed` remain usable with incomplete person-search coverage. Do not rewrite good transcripts, retranscribe media, or silently annotate the backlog during installation. A separately requested annotation pass uses existing evidence within the selected scope. `people_reviewed: true` with `people: []` means reviewed with no identifiable people; absent/false means unreviewed or incomplete. Person pages live under `wiki/entities/people/`, separate from uploader creator pages.
+
+For local playback requests, `indexx_watch.py` writes HTML and Markdown views under `wiki/views/`. Use a local browser for HTML or open the **library root as the Obsidian vault root** for media embeds; opening only `wiki/` does not include the sibling media tree. Do not promise local-video playback inside Grok chat. These outputs and the database remain private; creating them does not publish a site or authorize downloading missing media.
 
 ## Choose the transcription service
 

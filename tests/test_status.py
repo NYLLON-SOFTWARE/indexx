@@ -228,6 +228,20 @@ class StatusTests(unittest.TestCase):
         (self.root / "wiki/entities/creators/example_creator.md").unlink()
         self.check_invalid("missing or empty file")
 
+    def test_optional_people_validated_without_changing_transcript_contract(self):
+        original = (self.item / "transcript.md").read_bytes()
+        self.source_front.update(people_reviewed=True, people=[{
+            "id": "example-person", "name": "Example Person", "role": "speaker",
+            "evidence": "The archived caption explicitly names Example Person."}])
+        self.source()
+        self.check_invalid("missing or empty file")
+        person = self.root / "wiki/entities/people/example-person.md"
+        person.parent.mkdir(parents=True)
+        person.write_text(self.document({"id": "example-person", "name": "Example Person", "aliases": []},
+                                       "The caption identifies the speaker. [[sources/instagram/Example123]]\n"))
+        self.assertTrue(audit(self.root)["ok"])
+        self.assertEqual((self.item / "transcript.md").read_bytes(), original)
+
     def test_stale_frontmatter_is_reported_without_mutation(self):
         original = "---\ntags:\n  - example\n---\nOld content.\n"
         (self.item / "transcript.md").write_text(original)

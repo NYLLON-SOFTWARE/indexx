@@ -91,6 +91,42 @@ facets: {"form":"talk","topic":["learning"],"intent":"learn"}
 
 Follow front matter with a substantive source-grounded body and citations. The creator page `wiki/entities/creators/{handle}.md` must contain text. Tags are 5–10 unique kebab-case strings. Facets contain exactly `form` (one kebab-case string), `topic` (1–3 unique kebab-case strings), and `intent` (one of `entertainment`, `inspiration`, `reference`, `learn`). Use the library taxonomies for the actual meanings; structural validation does not judge classification quality.
 
+## People and source attribution
+
+Source pages may include two additional front matter fields:
+
+```yaml
+people: [{"id":"alan-watts","name":"Alan Watts","role":"speaker","evidence":"Caption explicitly credits Alan Watts as the speaker"}]
+people_reviewed: true
+```
+
+`people` is an inline JSON array. Each record contains exactly `id` (the stable kebab-case person slug), `name` (the canonical display name), `role`, and a nonempty `evidence` string describing the retained source evidence for that identity and role. Each `(id, role)` pair is unique within a source. The supported roles are `speaker` (the person speaks), `featured` (the person is a subject or participant), and `mentioned` (the source refers to them). Merely mentioning a name does not support `speaker`. Keep the supporting caption, explicit attribution, self-identification, or other evidence available in the source or its underlying artifacts, and cite it in the source body. An uploader handle is separate from the identities in the media.
+
+Never assert identity from a voice or appearance resemblance, model familiarity, or a diarization label such as `speaker-0`. Preserve uncertainty in prose without adding an unsupported person record. Reuse reviewed person IDs across uploader handles, but do not merge different people because names happen to match.
+
+`people_reviewed` is an optional boolean, defaulting to `false`. `true` requires an explicit `people` list; `true` with `[]` means a completed evidence review identified no people. Missing/false review flags indicate incomplete coverage, not that a person is absent. Valid evidence-supported entries may be indexed while review is incomplete. Both fields are optional for existing libraries: absent fields do not invalidate old completion claims, trigger transcript rewrites, or authorize a backlog annotation pass. People metadata belongs on source pages; it need not be copied into `info.json` or transcripts.
+
+Every referenced person has `wiki/entities/people/{id}.md`, separate from `wiki/entities/creators/{handle}.md`. Person front matter uses the same supported format:
+
+```markdown
+---
+id: alan-watts
+name: Alan Watts
+aliases: []
+---
+The caption identifies Alan Watts as the speaker in [Example123](../../sources/instagram/Example123.md). This source discusses learning through practice.
+```
+
+`id` matches the filename stem and source person IDs. `name` matches the canonical display name in source records. `aliases` is a JSON array of known alternate names; it may be empty. Do not invent aliases. The body must be substantive and cite the associated source pages, explaining what this library's sources support rather than adding an uncited biography. New sources update this shared page across creators; preserve prior citations and describe material disagreements. A person page can be supported by one source; the three-source rule applies to concept pages.
+
+## Local search and watch views
+
+The catalog, item artifacts, and Markdown wiki remain authoritative. `db/search.sqlite3` is a private, derived SQLite FTS5 database; rebuild it from existing files with `python3 scripts/indexx_search.py build --root /path/to/library`. The build does not alter transcripts, annotate people, validate all completion claims, or make provider calls. `python3 scripts/indexx_search.py status --root /path/to/library` reports freshness and coverage. Queries fail on missing/stale data so callers must rebuild before using the results as current.
+
+Use `query --root /path/to/library --person "Alan Watts" --role speaker --type video --all` with `scripts/indexx_search.py` to enumerate every matching indexed record. Exact person matching uses the reviewed identity, canonical name, and aliases, independently of uploader handles. Use `--text "anxiety"` for full-text retrieval, optionally with those filters. Text retrieval finds matching words; it does not guarantee every semantically related item. Report source/person-review coverage alongside counts, especially for legacy items with no annotations. An exhaustive result is exhaustive within the indexed, recorded evidence, not proof of completeness across unavailable or unreviewed media.
+
+`python3 scripts/indexx_watch.py --root /path/to/library --person "Alan Watts" --role speaker --type video --name alan-watts` creates `wiki/views/alan-watts.html` and `wiki/views/alan-watts.md`. These local snapshots include all matching records and distinguish playable files from missing media. HTML is for a local browser; Markdown embeds require the **library root as the Obsidian vault root**. Playback availability does not establish artifact completion. Do not promise inline playback in Grok chat. Rebuild the index and regenerate views after relevant changes. Neither output is authorization to download missing files or publish/upload the library.
+
 ## Word timestamps
 
 `transcript.words.json` is a **normalized JSON array**, not a raw provider response:
@@ -141,4 +177,4 @@ The audit validates every `wiki_ingested` item and exits nonzero for corrupt com
 
 The dashboard uses the validator's actual complete count; it never treats the number of `wiki_ingested` labels as proof. A validator error means “needs review/repair,” not permission to erase metadata, invent missing artifacts, retranscribe, or incur new charges. Legacy front matter can be normalized without changing transcript content, with a backup first; preserve accurate historical provenance. Leave an unrepairable item `partial` and report the missing facts.
 
-These are **structural checks**. They do not prove that media decodes, that transcript text is accurate, that a no-speech claim is true, that images exhaust the upstream carousel, or that a wiki synthesis is supported. Downloading still requires `ffprobe` checks; human/bot content review and citations are required separately. Concepts need ≥3 supporting sources unless explicitly requested; review concept support, broken wikilinks, tag quality, and watermarks separately.
+These are **structural checks**. They do not prove that media decodes, that transcript text is accurate, that a no-speech claim is true, that images exhaust the upstream carousel, that a person is correctly identified, or that a wiki synthesis is supported. Downloading still requires `ffprobe` checks; human/bot content review and citations are required separately. Concepts need ≥3 supporting sources unless explicitly requested; review concept support, person attribution/source links, contradictions, stale claims, broken wikilinks, tag quality, and watermarks separately. Search freshness and person-review coverage are reported separately from completion.

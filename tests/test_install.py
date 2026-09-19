@@ -50,6 +50,9 @@ class InstallerTests(unittest.TestCase):
         self.assertIsNone(config["stt"]["provider"])
         self.assertEqual(config["batch"]["download_n"], 10)
         self.assertTrue((self.root / "scripts/indexx_status.py").is_file())
+        self.assertTrue((self.root / "scripts/indexx_search.py").is_file())
+        self.assertTrue((self.root / "scripts/indexx_watch.py").is_file())
+        self.assertTrue((self.root / "wiki/entities/people").is_dir())
         self.assertTrue((self.root / "wiki/taxonomies/tags.md").is_file())
         self.assertTrue((self.root / "markdown/instagram/saves-index.md").is_file())
         self.assertEqual(result["conflicts"], [])
@@ -76,6 +79,21 @@ class InstallerTests(unittest.TestCase):
             check=True, capture_output=True, text=True,
         )
         self.assertTrue((self.root / "logs/dashboard.html").is_file())
+        subprocess.run(
+            [sys.executable, str(self.root / "scripts/indexx_search.py"), "build", "--root", str(self.root)],
+            check=True, capture_output=True, text=True,
+        )
+        search = subprocess.run(
+            [sys.executable, str(self.root / "scripts/indexx_search.py"), "query", "--root", str(self.root), "--all"],
+            check=True, capture_output=True, text=True,
+        )
+        self.assertEqual(json.loads(search.stdout)["total"], 0)
+        subprocess.run(
+            [sys.executable, str(self.root / "scripts/indexx_watch.py"), "--root", str(self.root)],
+            check=True, capture_output=True, text=True,
+        )
+        self.assertTrue((self.root / "wiki/views/watchlist.html").is_file())
+        self.assertTrue((self.root / "wiki/views/watchlist.md").is_file())
 
     def test_repair_preserves_choices_and_all_user_content(self):
         self.run_install()
