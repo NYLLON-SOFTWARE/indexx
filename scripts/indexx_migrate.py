@@ -162,7 +162,7 @@ def media_identities(root: Path) -> dict[str, Path]:
         folder = Path(directory)
         for name in subdirs:
             safe_path(root, str(folder / name))
-        if "info.json" not in files:
+        if folder == base or "info.json" not in files:
             continue
         info_path = safe_path(root, str(folder / "info.json"))
         info = read_object(info_path)

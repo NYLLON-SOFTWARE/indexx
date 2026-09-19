@@ -111,6 +111,16 @@ class MigrationTests(unittest.TestCase):
         self.assertEqual(transcript.read_text(), "original transcript")
         self.assertEqual(report["active_statuses_converted"], {"partial": 1, "discovered": 1})
 
+    def test_shared_media_root_is_not_an_item_directory(self):
+        folder = self.info("Pending", directory="media/instagram")
+        before = (folder / "info.json").read_bytes()
+        report = migration.apply_migration(self.root)
+        row = self.rows()[0]
+        self.assertEqual(row["status"], "discovered")
+        self.assertEqual(row["media_path"], "")
+        self.assertEqual(report["media_paths_added"], 0)
+        self.assertEqual((folder / "info.json").read_bytes(), before)
+
     def test_rerun_is_exact_noop_without_another_backup(self):
         self.info("Pending")
         first = migration.apply_migration(self.root)
