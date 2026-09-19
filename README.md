@@ -4,6 +4,10 @@ INDEXX is a **Grok Bot** that turns Instagram Saved into a personal media wiki: 
 
 **Current support: Mac-first.** Grok Bot has desktop apps for other platforms, but this library's Windows/Linux setup has not been verified. Transcription uses your explicit choice of **Grok Voice Transcribe 2.0** or **ElevenLabs Scribe**; INDEXX never switches providers automatically.
 
+## Permitted use
+
+Only download videos you own or that Instagram expressly permits you to download. Respect Instagram's terms and the rights of creators. **NYLLON LLC does not endorse or encourage using INDEXX to download copyrighted material without authorization.**
+
 ## Install
 
 A public INDEXX template link is not published in this repository yet. Do not assume the JSON file is a supported Grok import format.

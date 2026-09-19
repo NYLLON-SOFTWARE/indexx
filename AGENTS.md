@@ -2,6 +2,10 @@
 
 This is a Grok Bot workflow. Its profile and skills operate a media library on the user's registered **Mac**; the bot itself runs in the cloud. This release is Mac-first. Windows/Linux library execution is not yet verified.
 
+## Permitted use
+
+Only download videos the user owns or that Instagram expressly permits them to download. Respect Instagram's terms and the rights of creators. NYLLON LLC does not endorse or encourage using INDEXX to download copyrighted material without authorization. Do not treat public availability or inclusion in Saved as download permission.
+
 ## Library and installation
 
 - Resolve the library from its private locator and `.indexx.json`; never hardcode personal paths in shared instructions.

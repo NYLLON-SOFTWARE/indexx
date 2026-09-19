@@ -5,6 +5,10 @@ description: >-
 ---
 Download approved Instagram items into the local `media/` tree. Resolve `.indexx.json` and confirm commands run on the registered Mac, not the cloud shell. Never stage raw media in `/workspace`.
 
+## Permitted use
+
+Only download videos the user owns or that Instagram expressly permits them to download. Respect Instagram's terms and the rights of creators. NYLLON LLC does not endorse or encourage using INDEXX to download copyrighted material without authorization. Public availability, a working media URL, or inclusion in Saved is not sufficient permission under this workflow.
+
 ## Scope and credits
 
 Use `.indexx.json` `batch.download_n` only to divide the approved items into chunks. Follow the bounded `logs/job.json` contract in `AGENTS.md`, including selected items/stages/providers, total ceilings, retry allowance and stop condition. Reuse validated local files and available metadata/download URLs before spending again.

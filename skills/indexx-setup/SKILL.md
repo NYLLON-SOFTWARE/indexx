@@ -45,6 +45,7 @@ Check **ScrapeCreators** separately for public Instagram metadata and durable do
 
 ## Finish and first run
 
+- Show the permitted-use notice before the first download: "Only download videos you own or that Instagram expressly permits you to download. Respect Instagram's terms and the rights of creators. NYLLON LLC does not endorse or encourage using INDEXX to download copyrighted material without authorization."
 - Keep the absolute library locator private so the bot can find the library later. Exclude all installation state and live memories from public template generation.
 - Explain local storage versus cloud processing, shared Instagram sessions, and optional Grok video analysis using library `AGENTS.md` and `README.md`. Do not claim cloud synthesis happens locally.
 - Report the verified local computer/root, source commit, tool readiness, installed supporting files, chosen provider (or pending selection), and missing connections. Include conflicts or failed artifact checks.
