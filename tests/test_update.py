@@ -21,8 +21,8 @@ WORKFLOW_ID = 17
 def run_record(run_id=101, number=10, attempt=1, commit=MAIN, **changes):
     result = {"id": run_id, "run_number": number, "run_attempt": attempt, "head_sha": commit,
               "head_branch": "main", "event": "push", "workflow_id": WORKFLOW_ID,
-              "path": ".github/workflows/validate.yml", "repository": {"full_name": "kropdx/indexx"},
-              "head_repository": {"full_name": "kropdx/indexx"}, "status": "completed", "conclusion": "success"}
+              "path": ".github/workflows/validate.yml", "repository": {"full_name": "NYLLON-SOFTWARE/indexx"},
+              "head_repository": {"full_name": "NYLLON-SOFTWARE/indexx"}, "status": "completed", "conclusion": "success"}
     result.update(changes)
     return result
 
@@ -51,7 +51,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotIn("shell", options)
         self.assertEqual(options["timeout"], 30)
         endpoint = command[-1]
-        self.assertTrue(endpoint.startswith("repos/kropdx/indexx/"))
+        self.assertTrue(endpoint.startswith("repos/NYLLON-SOFTWARE/indexx/"))
         self.calls.append(endpoint)
         if self.error_at is not None and self.error_at in endpoint:
             return subprocess.CompletedProcess(command, 1, stdout="", stderr="private authentication detail must not be echoed")
@@ -59,7 +59,7 @@ class ReleaseTests(unittest.TestCase):
             self.ref_calls += 1
             payload = {"ref": "refs/heads/main", "object": {"type": "commit", "sha": self.main if self.ref_calls == 1 else self.after_first_ref}}
         elif "/compare/" in endpoint:
-            self.assertEqual(endpoint, f"repos/kropdx/indexx/compare/{OLD}...{self.main}")
+            self.assertEqual(endpoint, f"repos/NYLLON-SOFTWARE/indexx/compare/{OLD}...{self.main}")
             payload = self.comparison
         elif endpoint.endswith("/actions/workflows/validate.yml"):
             payload = self.workflow
@@ -93,7 +93,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(result["ci"], {"workflow": updater.WORKFLOW, "workflow_id": WORKFLOW_ID,
                                       "run_id": 101, "run_number": 10, "run_attempt": 1, "event": "push",
                                       "branch": "main", "commit": MAIN, "status": "completed", "conclusion": "success",
-                                      "url": "https://github.com/kropdx/indexx/actions/runs/101/attempts/1"})
+                                      "url": "https://github.com/NYLLON-SOFTWARE/indexx/actions/runs/101/attempts/1"})
 
     def test_invalid_revision_is_blocked_before_any_api_request(self):
         for revision in ("abc123", "g" * 40, "main", MAIN + "\n", "../main", 123):
@@ -110,7 +110,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(result["status"], "ready")
         self.assertEqual(result["commit"], OLD)
         self.assertEqual(result["main_commit"], MAIN)
-        self.assertIn(f"repos/kropdx/indexx/compare/{OLD}...{MAIN}", self.calls)
+        self.assertIn(f"repos/NYLLON-SOFTWARE/indexx/compare/{OLD}...{MAIN}", self.calls)
         self.assertEqual(self.ref_calls, 1)
         query_call = next(call for call in self.calls if "/runs?" in call)
         self.assertEqual(parse_qs(urlparse(query_call).query)["head_sha"], [OLD])
@@ -147,10 +147,43 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(result["status"], "blocked")
                 self.assertIn("No validation push run", result["reason"])
 
+    def test_company_repository_identity_is_case_insensitive_at_every_check(self):
+        self.runs = [run_record(repository={"full_name": "nyllon-software/indexx"},
+                                head_repository={"full_name": "NyLlOn-SoFtWaRe/INDEXX"})]
+        self.details[101] = run_record(repository={"full_name": "NYLLON-SOFTWARE/INDEXX"},
+                                      head_repository={"full_name": "nyllon-software/indexx"})
+        self.runs_after_detail = [run_record(repository={"full_name": "Nyllon-Software/Indexx"},
+                                             head_repository={"full_name": "NYLLON-SOFTWARE/indexx"})]
+        result = updater.resolve_release()
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["repo"], "NYLLON-SOFTWARE/indexx")
+        self.assertEqual(result["ci"]["url"], "https://github.com/NYLLON-SOFTWARE/indexx/actions/runs/101/attempts/1")
+        self.assertTrue(all(endpoint.startswith("repos/NYLLON-SOFTWARE/indexx/") for endpoint in self.calls))
+
+    def test_personal_and_renamed_codex_repositories_cannot_supply_validation(self):
+        for other_repo in ("kropdx/indexx", "NYLLON-SOFTWARE/indexx-codex", "nyllon-software/INDEXX-CODEX"):
+            for field in ("repository", "head_repository"):
+                for stage in ("initial_list", "detail", "refreshed_list"):
+                    with self.subTest(repository=other_repo, field=field, stage=stage):
+                        self.ref_calls = 0
+                        self.runs = [run_record()]
+                        self.details[101] = run_record()
+                        self.runs_after_detail = [run_record()]
+                        mismatched = run_record(**{field: {"full_name": other_repo}})
+                        if stage == "initial_list":
+                            self.runs = [mismatched]
+                        elif stage == "detail":
+                            self.details[101] = mismatched
+                        else:
+                            self.runs_after_detail = [mismatched]
+                        result = updater.resolve_release()
+                        self.assertEqual(result["status"], "blocked")
+                        self.assertEqual(result["repo"], "NYLLON-SOFTWARE/indexx")
+
     def test_eligible_runs_are_filtered_before_ordering(self):
         self.runs += [run_record(run_id=999, number=99, event="pull_request")]
         self.assertEqual(updater.resolve_release()["status"], "ready")
-        self.assertNotIn("repos/kropdx/indexx/actions/runs/999", self.calls)
+        self.assertNotIn("repos/NYLLON-SOFTWARE/indexx/actions/runs/999", self.calls)
 
     def test_missing_ci_never_falls_back_to_an_old_commit(self):
         self.runs = []
@@ -208,7 +241,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(result["status"], "blocked")
                 self.assertIn("changed during lookup", result["reason"])
                 self.assertEqual(sum("/runs?" in call for call in self.calls), 2)
-                self.assertNotIn("repos/kropdx/indexx/actions/runs/102", self.calls)
+                self.assertNotIn("repos/NYLLON-SOFTWARE/indexx/actions/runs/102", self.calls)
 
     def test_new_attempt_appearing_after_detail_lookup_blocks_old_success(self):
         self.runs_after_detail = [run_record(attempt=2, status="in_progress", conclusion=None)]
@@ -321,7 +354,7 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual(updater.main(), 1)
         report = json.loads(output.call_args.args[0])
         self.assertEqual(report["status"], "blocked")
-        self.assertEqual(report["repo"], "kropdx/indexx")
+        self.assertEqual(report["repo"], "NYLLON-SOFTWARE/indexx")
         self.assertEqual(report["commit"], MAIN)
 
 

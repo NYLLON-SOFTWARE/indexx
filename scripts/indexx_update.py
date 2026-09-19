@@ -15,7 +15,7 @@ from typing import Optional
 from urllib.parse import urlencode
 
 
-REPO = "kropdx/indexx"
+REPO = "NYLLON-SOFTWARE/indexx"
 CHANNEL = "main"
 WORKFLOW = ".github/workflows/validate.yml"
 SHA = re.compile(r"[0-9a-fA-F]{40}\Z")
@@ -50,7 +50,8 @@ def positive_int(value: object) -> bool:
 def matches(run: dict, commit: str, workflow_id: int) -> bool:
     repository, head_repository = run.get("repository"), run.get("head_repository")
     def trusted(value: object) -> bool:
-        return isinstance(value, dict) and isinstance(value.get("full_name"), str) and value["full_name"].lower() == REPO
+        return (isinstance(value, dict) and isinstance(value.get("full_name"), str)
+                and value["full_name"].casefold() == REPO.casefold())
     return (
         run.get("head_sha") == commit and run.get("head_branch") == CHANNEL
         and run.get("event") == "push" and run.get("workflow_id") == workflow_id
