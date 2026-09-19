@@ -106,7 +106,9 @@ python3 "$LIBRARY_ROOT/scripts/indexx_watch.py" --root "$LIBRARY_ROOT" --person 
 
 This creates `wiki/views/alan-watts.html` for a local browser and `wiki/views/alan-watts.md` for Obsidian, with all matching indexed records and their coverage. Use the **library root as your Obsidian vault root**, so video embeds can reach `media/`; opening only `wiki/` excludes that sibling directory. Missing local files remain visible as unavailable playback instead of silently disappearing from the list. These are local views, and Grok chat playback is not promised.
 
-Views are snapshots. Refresh the index and regenerate a view after relevant changes; neither command downloads missing videos or publishes content. Authorized wiki ingestion also rebuilds the index after each batch.
+Players preserve each video's natural aspect ratio within the card width and a 480-pixel height limit, so portrait videos use portrait-sized players. The browser reads local video metadata before playback to size the player; autoplay stays off.
+
+Views are snapshots. Refresh the index and regenerate a view after relevant changes; regenerate existing views after a watch-renderer update to pick up its layout changes. Neither command downloads missing videos or publishes content. Authorized wiki ingestion also rebuilds the index after each batch.
 
 ## Privacy: local archive, cloud processing
 
