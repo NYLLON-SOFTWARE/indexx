@@ -1,29 +1,32 @@
 ---
 name: INDEXX progress
 description: >-
-  Use during any multi-item INDEXX batch to maintain logs/pipeline-progress.md and stage-gate chat pings for real-time visual status.
+  Use during multi-item INDEXX jobs to update logs/pipeline-progress.md without losing previous rows or stage results.
 ---
-Keep a live visual progress board during INDEXX multi-item batches.
+Keep a local progress board for the currently approved job. Resolve the confirmed Mac library root from `.indexx.json`.
 
-## Board file
-`logs/pipeline-progress.md` in the library root (Mac canonical).
+## Update the board
 
-Rewrite via:
 ```bash
-python3 scripts/indexx_progress.py --root "$ROOT" --title "Batch name" \
-  --row "id=SHORTCODE handle=foo watch=running note=…"
+python3 scripts/indexx_progress.py --root "$ROOT" --title "Selected saves" \
+  --row 'id=SHORTCODE handle=example watch=running note="Checking for speech"'
+python3 scripts/indexx_progress.py --root "$ROOT" \
+  --row 'id=SHORTCODE watch=done note="Visual check complete"'
 ```
-Use `--clear` when starting a new batch.
 
-## Glyphs / stages
-- Glyphs: `○` pending · `…` running · `✓` done · `✗` fail/skip
-- Stages: `dl` download · `aud` audio.mp3 · `watch` Grok watch · `stt` selected-provider transcription · `tags` tags/facets · `wiki` wiki ingest
+Rows merge by `id`; omitted rows, fields, stage results and title are preserved. Quote values containing spaces inside each `--row` argument. Text is escaped for the Markdown table. Invalid input fails without replacing the existing board. Use `--clear` only when explicitly starting a new job; resuming the same job must not clear progress.
 
-## Chat convention
-At every stage gate, rewrite the board **and** send one short chat ping (what flipped). Do not dump the whole table every time. At batch end, quote or attach the final board.
+`logs/pipeline-progress.json` stores progress; `logs/pipeline-progress.md` is its rendered view. Both are written atomically. If writing the view is interrupted, rerun the command to rebuild it from JSON. The first update migrates an existing Markdown-only board. Legacy `✗` cannot distinguish failure from skip and is conservatively migrated as failure. Corrupt state is reported, not silently discarded. Timestamps use the local computer's timezone. Progress paths must resolve inside the confirmed library, including when clearing a board.
 
-Also keep the in-chat todo checklist updated. Point the user at the agent computer preview if they want to watch desktop work live.
+Allow only one job writer per library at a time. Coordinate between bots before updating the shared local job journal or progress board; atomic file replacement does not merge concurrent writers.
 
-## Policy reminders
-- STT uses `.indexx.json` → `stt.provider`, selected during setup: Grok Voice Transcribe 2.0 (recommended) or optional ElevenLabs Scribe. Never switch automatically; never ScrapeCreators transcript or mlx-whisper.
-- Estimate + OK before ScrapeCreators download spend or paid STT spend
+## Stages and states
+
+- Stages: `dl` download, `aud` audio, `watch` optional visual check, `stt` selected-provider transcription, `tags` tags/facets, `wiki` wiki ingest.
+- States: `pending` ○, `running` …, `done` ✓, `fail` ✗, `skip` −. Use an explanatory note for failed/skipped work.
+
+At stage gates update affected rows and send a short chat update when progress or a blocker is meaningful. At job end share the final board. The board is a display, not evidence of completion or spending authority: validate artifacts using `indexx-lint`, and resume from the bounded `logs/job.json` contract in `AGENTS.md`.
+
+## Scope and spending
+
+Use `.indexx.json` `batch.*` for scheduling within the approved items and stages. Never expand a selected job to the whole backlog. Preserve completed work on retries. Before paid calls follow the shared job approval, reservation and reconciliation rules; an existing approval covers further batches only within its provider, scope and remaining ceilings. Never switch transcription providers automatically.
